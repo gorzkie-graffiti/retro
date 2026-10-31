@@ -1,0 +1,406 @@
+/* Shared controls used by all three skins. */
+
+.theme-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #4d5a36;
+  font-family: Verdana, Geneva, Arial, sans-serif;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.theme-select-label {
+  font-weight: bold;
+}
+
+.theme-select select {
+  height: 20px;
+  max-width: 158px;
+  padding: 0 2px;
+  border: 1px solid #8ba7bd;
+  border-radius: 2px;
+  background: #fff;
+  color: #1e2c36;
+  font-family: Verdana, Geneva, Arial, sans-serif;
+  font-size: 9px;
+}
+
+.theme-select--compact select {
+  max-width: 132px;
+}
+
+.layout-bar .theme-select {
+  margin-right: 2px;
+  padding-right: 6px;
+  border-right: 1px solid #d4c8a0;
+}
+
+/* The dialog deliberately belongs to the desktop-era skins, not the glossy
+   Web 2.0 page. It wraps the existing connection module rather than a copy. */
+.retro-dialog-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(16, 25, 34, 0.46);
+}
+
+.retro-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 470px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 20px);
+  padding: 3px;
+  border: 2px outset #ffffff;
+  background: #c0c0c0;
+  color: #111;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.retro-dialog--messenger {
+  border-color: #f4f9ff #4f7398 #4f7398 #f4f9ff;
+  background: #d9d6cb;
+}
+
+.retro-dialog-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 21px;
+  padding: 0 2px 0 3px;
+  background: linear-gradient(90deg, #000080 0%, #0a3a9a 62%, #2f74c0 100%);
+  color: #fff;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 0 0 0 transparent;
+}
+
+.retro-dialog--messenger .retro-dialog-titlebar {
+  background: linear-gradient(90deg, #053b7a 0%, #1f68b3 58%, #7fb7e8 100%);
+}
+
+.retro-dialog-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid #dfe9f8;
+  background: #0d4f9a;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.retro-dialog-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.retro-window-close {
+  width: 17px;
+  height: 15px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px outset #f5f5f5;
+  background: #c0c0c0;
+  color: #111;
+  cursor: pointer;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 12px;
+}
+
+.retro-window-close:active {
+  border-style: inset;
+}
+
+.retro-dialog-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 5px 5px 0;
+}
+
+.retro-tab {
+  min-height: 21px;
+  padding: 2px 8px;
+  border: 1px solid #fff;
+  border-right-color: #808080;
+  border-bottom: none;
+  background: #c0c0c0;
+  color: #111;
+  cursor: pointer;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+}
+
+.retro-tab[aria-selected="true"] {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  background: #efede7;
+  font-weight: bold;
+}
+
+.retro-dialog-body {
+  height: min(372px, calc(100vh - 142px));
+  min-height: 220px;
+  margin: 0 5px;
+  overflow: auto;
+  border: 2px inset #f5f5f5;
+  background: #fff;
+}
+
+.retro-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 5px 3px;
+}
+
+.retro-dialog-note {
+  color: #404040;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 10px;
+}
+
+.retro-button {
+  min-width: 64px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 2px outset #f5f5f5;
+  background: #c0c0c0;
+  color: #111;
+  cursor: pointer;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.retro-button:hover {
+  background: #cdcac1;
+}
+
+.retro-button:active {
+  border-style: inset;
+}
+
+.retro-button:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -4px;
+}
+
+/* Existing connection form, re-dressed as a Windows dialog. */
+.retro-dialog .connection-shell {
+  min-height: 100%;
+  padding: 8px;
+  background: #fff;
+  color: #111;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+}
+
+.retro-dialog .connection-status {
+  align-items: center;
+  padding: 5px;
+  border: 2px inset #f5f5f5;
+  border-radius: 0;
+  background: #fff;
+}
+
+.retro-dialog .connection-status--online {
+  background: #f4fff4;
+}
+
+.retro-dialog .connection-status--offline {
+  background: #fff5f3;
+}
+
+.retro-dialog .connection-status-copy strong {
+  color: #000;
+  font-size: 11px;
+}
+
+.retro-dialog .connection-message {
+  color: #333;
+  font-size: 10px;
+}
+
+.retro-dialog .connection-meta,
+.retro-dialog .field-help,
+.retro-dialog .field-note,
+.retro-dialog .connection-endpoint {
+  color: #555;
+  font-size: 10px;
+}
+
+.retro-dialog .connection-meta strong,
+.retro-dialog .connection-endpoint code {
+  color: #111;
+}
+
+.retro-dialog .field-row label {
+  color: #111;
+  font-size: 11px;
+}
+
+.retro-dialog input,
+.retro-dialog select {
+  height: 22px;
+  padding: 1px 3px;
+  border: 2px inset #f5f5f5;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: none;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+}
+
+.retro-dialog input:focus,
+.retro-dialog select:focus {
+  border-color: #808080;
+  outline: 1px dotted #000;
+  outline-offset: -4px;
+  box-shadow: none;
+}
+
+.retro-dialog .btn {
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 2px outset #f5f5f5;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow: none;
+  color: #111;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+  font-weight: normal;
+  text-shadow: none;
+}
+
+.retro-dialog .btn:hover {
+  border-color: #f5f5f5;
+  background: #cdcac1;
+  color: #111;
+}
+
+.retro-dialog .btn:active {
+  padding-top: 3px;
+  padding-bottom: 1px;
+  background: #c0c0c0;
+  box-shadow: none;
+}
+
+.retro-dialog .btn:focus-visible,
+.retro-dialog .link-button:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 1px;
+}
+
+.retro-dialog .link-button {
+  color: #000080;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 10px;
+}
+
+.retro-dialog .link-button:hover {
+  color: #800000;
+}
+
+.retro-dialog .inline-error {
+  border: 1px solid #b00000;
+  border-radius: 0;
+  background: #fff1f1;
+  color: #800000;
+  font-size: 10px;
+}
+
+.retro-dialog .retro-help {
+  padding: 10px;
+  color: #111;
+  font-family: Tahoma, "MS Sans Serif", Verdana, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.retro-dialog .retro-help h3 {
+  margin: 0 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #808080;
+  color: #000080;
+  font-size: 12px;
+}
+
+.retro-dialog .retro-help p {
+  margin: 0 0 7px;
+}
+
+.retro-dialog .retro-help code {
+  background: #f0f0f0;
+  color: #111;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.retro-dialog .retro-help-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 7px;
+  padding: 4px;
+  border: 2px inset #f5f5f5;
+  background: #fff;
+}
+
+.retro-dialog .retro-help-status--online {
+  color: #006600;
+}
+
+.retro-dialog .retro-help-status--offline {
+  color: #900000;
+}
+
+.retro-dialog .retro-command-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 7px;
+}
+
+.retro-dialog .retro-command-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10px;
+}
+
+.retro-dialog .retro-help-fine {
+  color: #444;
+  font-size: 10px;
+}
+
+.retro-dialog .retro-help-link {
+  color: #0000cc;
+  font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-dialog *,
+  .retro-dialog *::before,
+  .retro-dialog *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

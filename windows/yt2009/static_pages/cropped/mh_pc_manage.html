@@ -1,0 +1,461 @@
+<style>
+    .highlighted-a {
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 30px;
+        display: block;
+    }
+    .i {
+        font-size: 18px;
+        font-weight: bold;
+    }
+    #account-list {
+        width: 400px;
+        margin-left: 280px;
+        border: 3px #ccc solid;
+        border-radius: 3px;
+    }
+    .account {
+        height: 50px;
+        border-bottom: 3px #ccc solid;
+    }
+    .selector {
+        text-align: right;
+        padding-right: 15px;
+    }
+    .selected-label {
+        margin-right: 3px;
+    }
+    .account img {
+        margin-top: 2px;
+        margin-left: 5px;
+        width: 40px;
+        height: 40px;
+    }
+    #account-name {
+        margin-left: 5px;
+        position: relative;
+        top: -15px;
+        font-size: 16px;
+    }
+    #unfinished {
+        background: rgb(255, 190, 68);
+        padding: 10px 10px;
+    }
+    #login-simulate-autopicker {
+        margin-top: 20px;
+        text-align: center;
+    }
+    #with-pchelper-watch-notice {
+        margin-left: 15px;
+    }
+</style>
+<div class="panel" id="panel1">
+    <h1>Account Picker</h1>
+</div>
+<hr>
+<div class="panel" id="panel2" style="display: none;">
+    <h1>Settings</h1>
+    <input type="checkbox" id="pchelper-comments-add-youtube" title="comments will be added to youtube instead of yt2009 sync.">
+    <label for="pchelper-comments-add-youtube">comments_add_youtube</label><br>
+    <input type="checkbox" id="pchelper-commit-ratings" title="star ratings will be submitted as like/dislike ratings on your youtube account.">
+    <label for="pchelper-commit-ratings">commit_ratings</label><br>
+    <input type="checkbox" id="pchelper-default-w2w" title="recommended section will use your youtube recommendations.">
+    <label for="pchelper-default-w2w">default_w2w</label><br>
+    <input type="checkbox" id="pchelper-playlists-sync" title="playlists will be brought over to yt2009.">
+    <label for="pchelper-playlists-sync">playlists_sync</label><br>
+    <input type="checkbox" id="pchelper-subscriptions-sync" title="subscriptions will be brought over to yt2009.">
+    <label for="pchelper-subscriptions-sync">subscriptions_sync</label><br>
+    <input type="checkbox" id="pchelper-user-related" title="show personal related videos on the top of related section on watchpage.">
+    <label for="pchelper-user-related">user_related</label><br>
+    <input type="checkbox" id="pchelper-use-yt-history" title="show your remote youtube history on /my_history." onchange="notifyWithWatch()">
+    <label for="pchelper-use-yt-history">use_yt_history</label><span class="hid bold" id="with-pchelper-watch-notice">if you want to also update your youtube history when watching through yt2009, enable <code>with_pchelper_watch</code></span>.<br>
+    <input type="checkbox" id="pchelper-watchlater-sync" title="enable sync of watch later to as quicklist.">
+    <label for="pchelper-watchlater-sync">watchlater_sync</label><br>
+    <input type="checkbox" id="pchelper-with-pchelper-watch" title="use watchpages requested as you, enabling saving to your youtube history and watching private videos.">
+    <label for="pchelper-with-pchelper-watch">with_pchelper_watch</label><br>
+    <a class="yt-button yt-button-primary" href="#" onclick="save_settings()">
+        <span>save</span>
+    </a>
+    <hr>
+    <div>
+        <h1>Danger Zone</h1>
+        <a class="yt-button yt-button-primary" href="#" onclick="unlinkhelper()">
+            <span>remove my account</span>
+        </a> from this yt2009 instance<br><br>
+        <a class="yt-button yt-button-primary" href="#" onclick="exposehelper()">
+            <span>export pchelper cookie</span>
+        </a> for moving devices<br><br>
+        <a class="yt-button yt-button-primary" href="#" onclick="exportflags()">
+            <span>export flags</span>
+        </a> for this pchelper signin for quick device moving<br><br>
+        <div id="flagimport-option" class="hid">
+            <a class="yt-button yt-button-primary" href="#" onclick="importflags()">
+                <span>import flags</span>
+            </a> previously exported using the above option
+        </div>
+    </div>
+</div>
+<script>
+    //gcod-
+    var device = "--PCHELPER_USER_COOKIE--"
+
+    if (window.XMLHttpRequest) {
+        r = new XMLHttpRequest()
+    } else {
+        r = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    r.open("GET", "/gsign_get_devices?r=" + Math.random().toString())
+    r.setRequestHeader("mode", "pchelper")
+    r.setRequestHeader("device", device)
+    r.send(null)
+    r.onreadystatechange = function(e) {
+        if(r.readyState == 4 || this.readyState == 4) {
+            if(r.getResponseHeader("x-yt2009-has-saved-flags")) {
+                document.getElementById("flagimport-option").className = ""
+            }
+            if(r.status !== 200) {
+                document.getElementById("panel1").innerHTML += "<br>no valid login?\
+                <br><a href=\"/mh_pc_intro\">sign in to pchelper</a>"
+            } else {
+                document.getElementById("panel1").innerHTML += r.responseText
+                document.getElementById("panel2").style.display = "block"
+            }
+        }
+    }
+
+
+    function login_change(pageid, name, first) {
+        var xr;
+        if (window.XMLHttpRequest) {
+            xr = new XMLHttpRequest()
+        } else {
+            xr = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        if(navigator.userAgent && navigator.userAgent.indexOf("MSIE") !== -1) {
+            // IE, put all params in url since doesnt apparently like headers
+            var url = [
+                "/gsign_set?r=" + Math.random().toString(),
+                "&device=" + device,
+                "&uid=" + pageid,
+                "&username=" + name.substring(0,60)
+            ]
+            if(first) {
+                url.push("&first=1")
+            }
+            url = url.join("")
+            xr.open("POST", url)
+        } else {
+            // anything more sane
+            xr.open("POST", "/gsign_set?r=" + Math.random().toString())
+            xr.setRequestHeader("device", device)
+            xr.setRequestHeader("uid", pageid)
+            xr.setRequestHeader("username", name.substring(0,60))
+            xr.setRequestHeader("mode", "pchelper")
+            if(first) {
+                xr.setRequestHeader("first", "1")
+            }
+        }
+        xr.send(null)
+        xr.onreadystatechange = function(e) {
+            if(r.readyState == 4 || this.readyState == 4) {
+                location.reload()
+            }
+        }
+    }
+
+
+    function updateDescriptions() {
+		// show flag descriptions on labels
+		var labels = document.getElementsByTagName("input")
+		for(var label in labels) {
+			label = labels[label]
+			if(label.id && label.getAttribute("type") == "checkbox") {
+				var target = document.getElementsByTagName("label")
+				for(var p in target) {
+					if(target[p]
+					&& target[p].tagName
+					&& target[p].getAttribute("for") == label.id) {
+						target = target[p]
+					}
+				}
+				var labelText = label.getAttribute("title")
+				target.setAttribute("title", labelText)
+			}
+		}
+	}
+	updateDescriptions()
+
+    var expiry = " expires=Fri, 31 Dec 2066 23:59:59 GMT"
+
+    function login_sim_change(name) {
+        var c = ""
+        var cookies = (document.cookie || "").split(";")
+        for(var cookie in cookies) {
+            cookie = cookies[cookie]
+            if(cookie.indexOf("global_flags=") !== -1) {
+                c = cookie.split("global_flags=")[1].replace(";", "")
+            }
+        }
+
+        // got global_flags cookie, remove old login_simulate
+        // and add new one
+        if(c.indexOf("login_simulate") !== -1) {
+            var lsName = c.split("login_simulate")[1].split(":")[0]
+            c = c.replace("login_simulate" + lsName + ":", "")
+            c = c.replace("login_simulate" + lsName, "")
+        }
+        c += "login_simulate" + name + ":"
+        document.cookie = "global_flags=" + c
+                        + "; Path=/;" + expiry;
+        alert("login_simulate name updated to " + name + "!")
+        location.reload()
+    }
+
+    function save_settings() {
+        var s = []
+        var inputs = document.getElementsByTagName("input")
+        for(var input in inputs) {
+			input = inputs[input]
+			if(input.id && input.getAttribute("type") == "checkbox"
+            && input.checked) {
+				s.push(input.id.replace("pchelper-", "").split("-").join("_"))
+			}
+		}
+        s = s.join(":")
+        if(s.indexOf("watchlater-sync") !== -1
+        && window.localStorage
+        && window.localStorage.removeItem) {
+            try {window.localStorage.removeItem("quicklistVids")}
+            catch(error){}
+        }
+        function saveCookie() {
+            location.href = "/pchelper_save_cookie?p=" + s + "&r=" + Math.random().toString()
+        }
+        function markSyncDone() {
+            syncsDone++
+            if(syncsDone >= syncsRequired) {
+                saveCookie()
+            }
+        }
+        var syncsRequired = 0;
+        var syncsDone = 0;
+        if(s.indexOf("playlists_sync") !== -1
+        || s.indexOf("subscriptions_sync") !== -1) {
+            var r = confirm("using \"_sync\" flags, it is highly recommended\n\
+to clear playlist and subscription data to avoid conflicts.\n\
+all the data will be backed up in your browser for future use.\n\
+should we do so?");
+            if(r) {
+                if(window.localStorage) {
+                    var subs = localStorage.subscriptions;
+                    if(subs) {
+                        localStorage.backup_subscriptions = subs;
+                        localStorage.subscriptions = "[]"
+                    }
+                    var playlists = localStorage.playlistsIndex;
+                    if(playlists) {
+                        localStorage.backup_playlistsIndex = playlists;
+                        localStorage.playlistsIndex = "[]"
+                    }
+                    var favs = localStorage.favorites;
+                    if(favs) {
+                        localStorage.backup_favorites = favs;
+                        localStorage.favorites = "[\"PCHELPER_MANAGED\"]"
+                    }
+                }
+                if(document.cookie.indexOf("favorites=") !== -1) {
+                    var favs = document.cookie.split("favorites=")[1].split(";")[0]
+                    document.cookie = "favorites_backup=" + favs
+                                    + "; Path=/;" + expiry;
+                }
+                document.cookie = "favorites=PCHELPER_MANAGED; Path=/;" + expiry;
+                if(document.cookie.indexOf("playlist_index=") !== -1) {
+                    var favs = document.cookie.split("playlist_index=")[1].split(";")[0]
+                    document.cookie = "backup_pindex=" + favs
+                                    + "; Path=/;" + expiry;
+                }
+                document.cookie = "playlist_index=; Path=/;" + expiry;
+                if(document.cookie.indexOf("sublist=") !== -1) {
+                    var favs = document.cookie.split("sublist=")[1].split(";")[0]
+                    document.cookie = "sublist_backup=" + favs
+                                    + "; Path=/;" + expiry;
+                }
+                document.cookie = "sublist=; Path=/;" + expiry;
+            }
+
+            var dataFormat = "cookie"
+            if(window.localStorage && window.JSON) {
+                dataFormat = "localstorage"
+            }
+
+            syncsRequired = 2;
+
+            var r;
+            if (window.XMLHttpRequest) {
+                r = new XMLHttpRequest()
+            } else {
+                r = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            function addR() {
+                return "&r=" + Math.random().toString()
+            }
+            r.open("GET", "/pchelper_subs?format=" + dataFormat + addR())
+            r.send(null)
+            r.onreadystatechange = function(e) {
+                if(r.readyState == 4 || this.readyState == 4) {
+                    if(r.status == 200) {
+                        if(dataFormat == "cookie") {
+                            document.cookie = "sublist=" + r.responseText
+                                            + "; Path=/;" + expiry;
+                        } else if(dataFormat == "localstorage" && JSON) {
+                            var a = JSON.parse(r.responseText)
+                            var existing = JSON.parse(
+                                localStorage.subscriptions || "[]"
+                            )
+                            a.forEach(function(s) {
+                                existing.push(s)
+                            })
+                            localStorage.subscriptions = JSON.stringify(existing);
+                        }
+                    }
+                    markSyncDone()
+                }
+            }
+
+            var r2;
+            if (window.XMLHttpRequest) {
+                r2 = new XMLHttpRequest()
+            } else {
+                r2 = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            r2.open("GET", "/pchelper_playlists?format=" + dataFormat + addR())
+            r2.send(null)
+            r2.onreadystatechange = function(e) {
+                if(r2.readyState == 4 || this.readyState == 4) {
+                    if(r2.status == 200) {
+                        if(dataFormat == "cookie") {
+                            document.cookie = "playlist_index=" + r2.responseText
+                                            + "; Path=/;" + expiry;
+                        } else if(dataFormat == "localstorage" && JSON) {
+                            var a = JSON.parse(r2.responseText)
+                            var existing = JSON.parse(
+                                localStorage.playlist_index || "[]"
+                            )
+                            a.forEach(function(s) {
+                                existing.push(s)
+                            })
+                            localStorage.playlistsIndex = JSON.stringify(existing);
+                        }
+                        markSyncDone()
+                    }
+                }
+            }
+        }
+        if(syncsRequired == 0) {
+            saveCookie()
+        }
+    }
+
+    function unlinkhelper() {
+        var message = [
+            "unlinking pchelper will remove your data from this yt2009 instance,",
+            "resulting in your need to log in again if needed.",
+            "confirm?"
+        ]
+        var r = confirm(message.join(" "))
+        if(r) {
+            window.location = "/unlinkhelper?device=" + device
+        }
+    }
+
+    function exposehelper() {
+        var message = [
+            "showing the pchelper cookie will let you move your account",
+            "but it can also be added by anyone to use your youtube channel.",
+            "make sure to keep this token secret."
+        ]
+        var r = confirm(message.join(" "))
+        if(r) {
+            alert("pchelper_user cookie: " + device)
+        }
+    }
+
+    function exportflags() {
+        var flags = ""
+		var cookies = document.cookie.split("; ")
+		for(var c in cookies) {
+			if(!cookies[c]) return;
+			c = cookies[c]
+			if(c.indexOf("watch_flags") == 0
+			|| c.indexOf("results_flags") == 0
+			|| c.indexOf("channel_flags") == 0
+			|| c.indexOf("mainpage_flags") == 0
+			|| c.indexOf("global_flags") == 0) {
+				flags += c += "; "
+			}
+		}
+        var r;
+        if (window.XMLHttpRequest) {
+            r = new XMLHttpRequest()
+        } else {
+            r = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        function addR() {
+            return "?r=" + Math.random().toString()
+        }
+        r.open("POST", "/save_pchelper_flags" + addR())
+        r.send(flags)
+        r.onreadystatechange = function(e) {
+            if(r.readyState == 4 || this.readyState == 4) {
+                document.getElementById("flagimport-option").className = ""
+                alert("settings saved! use the \"import flags\" option on a new device to import.")
+            }
+        }
+    }
+
+    function importflags() {
+        var message = [
+            "importing flags will overwrite your current settings.",
+            "continue?"
+        ]
+        var c = confirm(message.join(" "))
+        if(c) {
+            var cookieEnd = "; Path=/; expires=Fri, 31 Dec 2066 23:59:59 GMT"
+            var r;
+            if (window.XMLHttpRequest) {
+                r = new XMLHttpRequest()
+            } else {
+                r = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            function addR() {
+                return "?r=" + Math.random().toString()
+            }
+            r.open("GET", "/get_pchelper_flags" + addR())
+            r.send(null)
+            r.onreadystatechange = function(e) {
+                if(r.readyState == 4 || this.readyState == 4) {
+                    var f = r.responseText
+                    var fs = f.split("; ")
+                    var flagCount = 0;
+                    for(var c in fs) {
+                        c = fs[c]
+                        if(c.indexOf("=") !== -1) {
+                            var cName = c.split("=")[0]
+                            var cValue = c.split("=")[1]
+                            document.cookie = cName + "=" + cValue + cookieEnd
+                            flagCount++
+                        }
+                    }
+
+                    alert(flagCount + " cookies imported.")
+                }
+            }
+        }
+    }
+
+    function notifyWithWatch() {
+        document.getElementById("with-pchelper-watch-notice").className = "bold"
+    }
+</script>

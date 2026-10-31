@@ -1,0 +1,47 @@
+# config.json
+
+as part of the setup process, yt2009 will write a file called `config.json` inside the `back` directory.
+
+inside you will find the properties you have set up using yt2009setup.js:
+
+- `port` - the port HTTP yt2009 will use
+- `env` - the environment (dev/prod)
+- `useSSL` - whether SSL (https) is used
+- `SSLCertPath` - SSL cert
+- `SSLKeyPath` - SSL private key
+- `SSLPort` - the port HTTP**s** yt2009 will use
+- `ip` - the IP address used for paths that need to have it hardcoded (e.g. gdata endpoints)
+- `auto_maintain` - automatically maintains space used by yt2009. toggle false: `true/false`.
+- `maintain_max_size` - max size of the /assets/ folder - number in GB. to be set with `auto_maintain`.
+- `maintain_max_cache_size` - max size per cache file - number in MB. to be set with `auto_maintain`.
+
+other params you can set:
+
+- `tokens` - an array of access tokens required to access if prod is used
+- `fallbackMode` - doesn't use the saved cache. deprecated
+- `overrideMaster` - use a different master server for comments/video sync
+- `disableWs` - disable the use of a master server altogether
+- `templocked_tokens` - an array of access tokens that will be redirected to /t.htm
+- `customHomepageText` - a custom text that will be shown on the homepage
+- `redirmode` - an **absolute** http path of a different yt2009 instance you wish to redirect to
+- `logged_tokens` - an array of access tokens that will have their usage logged in `accessdata`.
+- `ratelimit` - a number of web fetch requests one ipv4 address/one ipv6 block can make in 1 minute.
+- `gdata_auth` - require token-based authorization for gdata api (e.g. mobile apps). `true/false`
+
+^ pre-enabled for `prod` config hosts with tokens.
+
+- `reencode_devs` - a list of user agent parts to reencode mp4s to a more compatible codec. comma-separated.
+- `trusted_context` - require additional "context" data to start download of mp4 videos. `true/false`
+- `tc_override_key` - a key for mp4 requests to bypass trusted context. more in yt2009trustedcontext.js.
+- `data_api_key` - accepts a google data api v3 for proper categories to show in video descriptions.
+- `innertube_api_key` - YouTube innertube key (or set `YT2009_INNERTUBE_API_KEY`). Not committed in this repo.
+- `pot_api_key` - player-token key (or set `YT2009_POT_API_KEY`). Not committed in this repo.
+- `file_limit` - a number in MB of max upload size. (default: 10)
+- `default_f` - should flash mode be enabled by default for new sessions. `true/false`
+- `default_fh264` - should H264 be enabled with flash by default for new sessions. `true/false`
+- `dl_max_retry` - maximum number of network retries for a download url. (default: 5)
+- `max_1080` - prevent from showing higher qualities than 1080p through html5. `true/false`
+- `ipv6` - a string containing your ipv6 subnet you can use. (e.g. "2a01:4f8:xxxx:xxxx")
+- `alt_hostname` - allows using an alt API hostname, enabling hostsfile redirect to www.youtube.com.
+- `disable_ipv6_for_tcplayer` - explicitly disable ipv6 for turbocharge /player requests
+ONLY TO BE USED AFTER INITIAL SETUP. `true/false`

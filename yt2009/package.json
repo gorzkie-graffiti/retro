@@ -1,0 +1,28 @@
+{
+  "name": "yt2009",
+  "version": "1.32.4",
+  "description": "2009 frontend for youtube",
+  "main": "back/backend.js",
+  "scripts": {
+    "start": "cd back && node backend",
+    "start_wrap": "cd back && node backend_wrap",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "2009",
+    "youtube",
+    "yt2009",
+    "frontend"
+  ],
+  "dependencies": {
+    "express": "^4.21.2",
+    "google-protobuf": "3.21.2",
+    "maxmind-db-reader": "git+https://github.com/ftde0/node-maxmind-db.git",
+    "node-fetch": "^2.6.7",
+    "node-html-parser": "5.3.3",
+    "readline-sync": "^1.4.10",
+    "ws": ">=5.2.5"
+  },
+  "author": "dxegom",
+  "license": "Apache-2.0"
+}

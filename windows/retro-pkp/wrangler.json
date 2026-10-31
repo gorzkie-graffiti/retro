@@ -1,0 +1,6 @@
+{
+  "name": "retro-pkp",
+  "main": "worker.js",
+  "compatibility_date": "2026-05-14",
+  "compatibility_flags": []
+}

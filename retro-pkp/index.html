@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elektroniczny Rozkład Jazdy Pociągów</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f0f0f0; color: #000; font: 12px Arial, Helvetica, sans-serif; }
+    button, input { font: inherit; }
+    .topbar { height: 38px; display: flex; align-items: center; background: #adb7af; }
+    .brand { width: 185px; height: 38px; padding: 9px 17px; background: #fe5b18; color: #fff; font-size: 16px; font-weight: bold; }
+    .topbar-text { padding-left: 16px; color: #fff; font-weight: bold; }
+    .topbar-title { margin-left: auto; padding-right: 20px; color: #fff; font-style: italic; font-weight: bold; }
+    .tabs { display: flex; align-items: end; min-height: 30px; padding: 8px 10px 0; }
+    .tab { border: 0; margin: 0 2px 0 0; padding: 4px 14px; background: #c2c2c2; color: #454545; font-weight: bold; cursor: pointer; }
+    .tab.activeslider { background: #9e9e9e; color: #fff; }
+    .clock { margin-left: auto; padding: 0 8px 5px; color: #58625a; font-size: 11px; font-style: italic; font-weight: bold; }
+    .shell { border: 1px solid #9e9e9e; margin: 0; }
+    .language { display: flex; gap: 18px; padding: 5px 10px; background: #9e9e9e; color: #d6d6d6; font-weight: bold; }
+    .language .active { color: #fff; }
+    .page-title { display: flex; align-items: center; min-height: 31px; padding: 0 10px; background: #454545; color: #fff; font-weight: bold; }
+    .page-title small { margin-left: auto; font-weight: normal; }
+    main { padding: 10px; min-height: 450px; }
+    .view { max-width: 900px; }
+    .section-title { display: flex; align-items: center; height: 20px; margin: 8px 0 5px; padding: 0 8px; background: #9e9e9e; color: #fff; font-weight: bold; }
+    .section-title::before { content: '›'; font-size: 19px; line-height: 1; margin-right: 8px; }
+    .form-table { border-collapse: separate; border-spacing: 0 5px; }
+    .form-table th { width: 95px; text-align: left; white-space: nowrap; }
+    .form-table th::before { content: '◆'; color: #454545; font-size: 9px; margin-right: 5px; }
+    .form-table td { position: relative; }
+    input[type="text"] { height: 21px; border: 1px solid #777; background: #fff; padding: 2px 4px; }
+    .station-input { width: min(330px, 65vw); }
+    .small-input { width: 108px; }
+    .suggestions { display: none; position: absolute; z-index: 3; max-height: 180px; overflow-y: auto; border: 1px solid #777; background: #fff; box-shadow: 1px 2px 3px #888; }
+    .autocomplete-suggestion { padding: 4px 6px; cursor: pointer; }
+    .autocomplete-suggestion:hover { background: #d6d6d6; }
+    .date-buttons button { padding: 0 5px; height: 19px; }
+    .divider { height: 1px; margin: 14px 0 3px; background: #5c5c5c; }
+    .actions button { min-width: 110px; height: 22px; margin-right: 4px; }
+    .search { color: #c00; font-weight: bold; }
+    .hint { margin-top: 16px; color: #555; }
+    .results-message { padding: 7px 0; }
+    .results { width: 100%; border-collapse: collapse; background: #fff; }
+    .results th { padding: 4px 5px; border: 1px solid #999; background: #9e9e9e; color: #fff; text-align: left; }
+    .results td { padding: 5px; border: 1px solid #bbb; }
+    .resultlight { background: #f7f7f7; color: #000; }
+    .resultdark { background: #e5e5e5; color: #000; }
+    a.bold { color: #454545; cursor: pointer; text-decoration: underline; font-weight: bold; }
+    .info-panel { margin: 8px 0; padding: 7px; border: 1px solid #aaa; background: #e7e7e7; }
+    footer { padding: 8px 10px; background: #9e9e9e; color: #cecece; line-height: 17px; }
+    footer strong { color: #fff; }
+    @media (max-width: 550px) { .topbar-title { display: none; } .brand { width: auto; } main { padding: 7px; } .form-table th { width: 70px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar"><div class="brand">PKP</div><div class="topbar-text">Rozkład jazdy</div><div class="topbar-title">Elektroniczny Rozkład Jazdy Pociągów</div></div>
+    <nav class="tabs" aria-label="Nawigacja">
+      <button id="tab-planner" class="tab activeslider" type="button">Plan podróży</button>
+      <button id="tab-stations" class="tab slider" type="button">Stacje</button>
+      <span id="current-time-display" class="clock"></span>
+    </nav>
+    <div class="shell">
+      <div class="language"><span class="active">Polski</span><span>English</span><span>Deutsch</span><span>Français</span></div>
+      <div class="page-title"><span id="page-title-text">Zapytanie o połączenie</span><small>Rozkład jazdy PKP</small></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-planner-form" class="view">
+      <form id="planner-form">
+        <div class="section-title">Trasa</div>
+        <table class="form-table"><tbody>
+          <tr><th scope="row">Z:</th><td>Stacja/przyst.</td><td><input id="planner-from" class="station-input" type="text" autocomplete="off" autofocus><div id="suggestions-from" class="suggestions"></div></td></tr>
+          <tr><th scope="row">Do:</th><td>Stacja/przyst.</td><td><input id="planner-to" class="station-input" type="text" autocomplete="off"><div id="suggestions-to" class="suggestions"></div></td></tr>
+        </tbody></table>
+        <div class="section-title">Kiedy</div>
+        <table class="form-table"><tbody>
+          <tr><th scope="row">Data:</th><td><input id="planner-date" class="small-input" type="text" inputmode="numeric" placeholder="DD.MM.RRRR"><span class="date-buttons"><button id="btn-date-prev" type="button" title="Dzień wcześniej">−</button><button id="btn-date-next" type="button" title="Dzień później">+</button></span></td></tr>
+          <tr><th scope="row">Czas:</th><td><input id="planner-time" class="small-input" type="text" inputmode="numeric" placeholder="GG:MM"> <label><input id="mode-dep" type="radio" name="planner-mode" checked> Odjazd</label> <label><input type="radio" name="planner-mode"> Przyjazd</label></td></tr>
+        </tbody></table>
+        <div class="section-title">Czym</div>
+        <p><label>Środki komunikacji: <select><option>Wszystkie środki komunikacji</option><option>Oprócz pociągów ekspresowych</option><option>Tylko komunikacja regionalna</option></select></label></p>
+        <div class="divider"></div>
+        <p class="actions"><button class="search" type="submit">Szukaj połączeń</button><button id="btn-clear-planner" type="button">Nowe zapytanie</button></p>
+      </form>
+    </section>
+
+    <section id="view-stations-form" class="view" style="display:none">
+      <form id="stations-form">
+        <div class="section-title">Stacja</div>
+        <table class="form-table"><tbody>
+          <tr><th scope="row">Nazwa:</th><td><input id="station-name" class="station-input" type="text" autocomplete="off"><div id="suggestions-station" class="suggestions"></div></td></tr>
+          <tr><th scope="row">Czas:</th><td><input id="station-time" class="small-input" type="text" inputmode="numeric" placeholder="GG:MM"> <label><input id="board-dep" type="radio" name="board-mode" checked> Odjazdy</label> <label><input type="radio" name="board-mode"> Przyjazdy</label></td></tr>
+        </tbody></table>
+        <div class="divider"></div>
+        <p class="actions"><button class="search" type="submit">Pokaż tablicę</button><button id="btn-clear-stations" type="button">Nowe zapytanie</button></p>
+      </form>
+      <div id="station-board-results-box" style="display:none">
+        <div class="section-title"><span id="station-board-title-label">Tablica stacyjna</span></div>
+        <table class="results"><thead><tr><th>Godzina</th><th>Pociąg</th><th>Kierunek</th><th>Informacje</th></tr></thead><tbody id="station-board-results-tbody"></tbody></table>
+      </div>
+    </section>
+
+    <section id="view-results" class="view" style="display:none">
+      <div class="section-title"><span id="results-header-label">Połączenia</span></div>
+      <p id="results-message" class="results-message"></p>
+      <table class="results"><thead><tr><th>Odjazd ze stacji</th><th>Godz.</th><th>Przyjazd do stacji</th><th>Godz.</th><th>Czas jazdy</th><th>Przesiadki</th><th>Pociąg</th><th></th></tr></thead><tbody id="connections-results-tbody"></tbody></table>
+      <p class="actions"><button id="btn-back-to-planner" type="button">Wróć</button></p>
+    </section>
+
+    <section id="view-journey-details" class="view" style="display:none">
+      <div class="section-title"><span id="journey-details-header-label">Szczegóły trasy</span></div>
+      <div id="journey-info-panel" class="info-panel"></div>
+      <table class="results"><thead><tr><th>Stacja</th><th>Przyjazd</th><th>Odjazd</th><th>Postój</th><th>Peron</th></tr></thead><tbody id="journey-stops-tbody"></tbody></table>
+      <p class="actions"><button id="btn-back-to-results" type="button">Wróć do połączeń</button></p>
+    </section>
+  </main>
+  <footer><strong>Informacja Kolejowa</strong><br>Historyczny wygląd inspirowany rozkładem PKP z 2006 r. Dane połączeń są pobierane na żywo.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

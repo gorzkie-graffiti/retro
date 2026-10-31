@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+release/
+coverage/
+
+# Local development harnesses and captured pages
+harness*.html
+/album/
+/artist/
+/collection/
+/playlist/
+*.log
+
+# Freebuff workspace metadata
+.freebuff/
+
+# The upstream Webamp checkout is a local reference and contains its own .git.
+# The built UMD bundle and its licence are vendored under src/vendor/webamp/.
+references/webamp/
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

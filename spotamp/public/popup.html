@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spotamp</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="window" aria-label="Spotamp settings">
+      <header class="titlebar">
+        <span class="titlebar-led" aria-hidden="true"></span>
+        <span class="titlebar-text">SPOTAMP v0.1</span>
+        <span class="titlebar-grip" aria-hidden="true">▓▒░</span>
+      </header>
+
+      <section class="panel">
+        <div class="display" id="display" role="status" aria-live="polite">
+          <span class="display-line">SYSTEM READY</span>
+          <span class="display-line display-line--dim" id="statusText">checking interface…</span>
+        </div>
+
+        <label class="switch" for="enabled">
+          <input id="enabled" type="checkbox" />
+          <span class="switch-box" aria-hidden="true"></span>
+          <span class="switch-copy">
+            <strong>ENABLE SPOTAMP</strong>
+            <small>Restore the Winamp interface on Spotify.</small>
+          </span>
+        </label>
+
+        <div class="scale">
+          <div class="scale-head">
+            <label for="scale">WINAMP SCALE</label>
+            <output id="scaleValue" for="scale">100%</output>
+          </div>
+          <input
+            id="scale"
+            type="range"
+            min="50"
+            max="200"
+            step="5"
+            value="100"
+            aria-label="Winamp interface scale"
+            aria-describedby="scaleHint"
+          />
+          <div class="scale-ticks" aria-hidden="true">
+            <span>50%</span><span>100%</span><span>200%</span>
+          </div>
+          <small id="scaleHint">Resizes the player, library and status strip.</small>
+        </div>
+
+        <div class="led-row" aria-hidden="true">
+          <span class="led led--green"></span>
+          <span class="meter"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="led led--amber"></span>
+        </div>
+
+        <a class="button" href="https://open.spotify.com/" target="_blank" rel="noreferrer">
+          OPEN SPOTIFY
+        </a>
+      </section>
+
+      <section class="notes" aria-label="Limitations">
+        <p class="notes-title">README.TXT</p>
+        <p>
+          Playback uses Spotify's own player. Webamp's EQ and visualizer are
+          display-only.
+        </p>
+        <p>
+          Scale applies live. Press OFF in the strip to restore Spotify's
+          normal interface.
+        </p>
+      </section>
+
+      <footer class="footer">
+        <span>Webamp 2.3.1</span>
+        <span>MIT</span>
+      </footer>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

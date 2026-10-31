@@ -1,0 +1,3392 @@
+/* ==========================================================================
+   Spotamp — shared Winamp 2-era skin for the Spotify Web Player
+   All rules are scoped under html.spotamp-active so disabling Spotamp restores
+   Spotify's own CSS without a reload.
+   ========================================================================== */
+
+html.spotamp-active {
+  --spotamp-bg: #060806;
+  --spotamp-panel: #101410;
+  --spotamp-panel-2: #151b15;
+  --spotamp-panel-3: #1b231b;
+  --spotamp-line: #2b352b;
+  --spotamp-line-bright: #465746;
+  --spotamp-green: #49ff7e;
+  --spotamp-green-dim: #1b9c4c;
+  --spotamp-green-dark: #0d3a20;
+  --spotamp-amber: #ffca3a;
+  --spotamp-text: #d8e5d8;
+  --spotamp-muted: #8b9b8b;
+  --spotamp-red: #ff5b4d;
+  --spotamp-mono: "Lucida Console", "Courier New", ui-monospace, monospace;
+  --spotamp-bar-h: 58px;
+  background: var(--spotamp-bg) !important;
+  color-scheme: dark;
+  scrollbar-color: #3d4c3d #0a0d0a;
+}
+
+html.spotamp-active body {
+  background: var(--spotamp-bg) !important;
+  color: var(--spotamp-text);
+}
+
+html.spotamp-active #main,
+html.spotamp-active [data-testid="root"] {
+  background: var(--spotamp-bg) !important;
+}
+
+/* Re-map Spotify's dark theme tokens inside the app. */
+html.spotamp-active [data-testid="root"] {
+  --background-base: #0b0e0b;
+  --background-highlight: #161d16;
+  --background-press: #090c09;
+  --background-elevated-base: #111611;
+  --background-elevated-highlight: #1a221a;
+  --background-elevated-press: #0d110d;
+  --background-tinted-base: #172017;
+  --background-tinted-highlight: #1e291e;
+  --background-tinted-press: #121812;
+  --background-base-70: rgba(11, 14, 11, 0.82);
+  --text-base: #d8e5d8;
+  --text-subdued: #8b9b8b;
+  --text-bright-accent: #49ff7e;
+  --essential-base: #d8e5d8;
+  --essential-subdued: #8b9b8b;
+  --essential-bright-accent: #49ff7e;
+  --decorative-base: #d8e5d8;
+  --decorative-subdued: #5c6a5c;
+  --encore-spacing-tighter-2: 6px;
+  --encore-spacing-tighter: 8px;
+}
+
+html.spotamp-active ::selection {
+  background: var(--spotamp-green);
+  color: #031107;
+}
+
+/* Square, compact scrollbars are part of the period look. */
+html.spotamp-active *::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+html.spotamp-active *::-webkit-scrollbar-track {
+  background: #0a0d0a;
+  border-left: 1px solid #1b221b;
+}
+html.spotamp-active *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #465546, #252e25);
+  border: 1px solid #050705;
+  box-shadow: inset 1px 1px 0 #6c7d6c;
+}
+html.spotamp-active *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5a6c5a, #303b30);
+}
+
+/* --------------------------------------------------------------------------
+   Top bar and real Spotify search
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active #global-nav-bar {
+  background: linear-gradient(180deg, #1a211a 0%, #0b0f0b 100%) !important;
+  border-bottom: 1px solid var(--spotamp-line-bright) !important;
+  box-shadow:
+    inset 0 -1px 0 #020402,
+    0 2px 0 #020402 !important;
+}
+
+html.spotamp-active #global-nav-bar form {
+  background: #050805 !important;
+  border: 1px solid #3f503f !important;
+  border-radius: 0 !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    1px 1px 0 #2a332a !important;
+}
+
+html.spotamp-active [data-testid="search-input"] {
+  background: transparent !important;
+  color: var(--spotamp-green) !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.02em;
+  caret-color: var(--spotamp-green);
+}
+
+html.spotamp-active [data-testid="search-input"]::placeholder {
+  color: #5f7a63 !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active [data-testid="search-icon"] {
+  color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-testid="home-button"],
+html.spotamp-active [data-testid="browse-button"],
+html.spotamp-active [data-testid="expand-button"] {
+  border-radius: 0 !important;
+  background: #121712 !important;
+  border: 1px solid #303a30 !important;
+  box-shadow: inset 1px 1px 0 #3b463b;
+}
+html.spotamp-active [data-testid="home-button"]:hover,
+html.spotamp-active [data-testid="browse-button"]:hover,
+html.spotamp-active [data-testid="expand-button"]:hover {
+  background: #1a231a !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-testid="upgrade-button"],
+html.spotamp-active [aria-label="Install App"] {
+  border-radius: 0 !important;
+  border: 1px solid #374237 !important;
+  background: #101510 !important;
+  color: var(--spotamp-text) !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+html.spotamp-active [data-testid="user-widget-avatar"] {
+  border-radius: 0 !important;
+  border: 1px solid #4c5d4c !important;
+  box-shadow: 1px 1px 0 #000;
+}
+
+html.spotamp-active [data-testid="search-dropdown"] {
+  background: #0a0e0a !important;
+  border: 1px solid var(--spotamp-green-dim) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    3px 3px 0 #000 !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active [data-testid="search-dropdown"] [role="row"] {
+  border-bottom: 1px solid #1b231b;
+  border-radius: 0 !important;
+}
+html.spotamp-active [data-testid="search-dropdown"] [role="row"]:hover {
+  background: #172217 !important;
+}
+html.spotamp-active [data-testid="search-dropdown"] img {
+  border-radius: 0 !important;
+  border: 1px solid #334033;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar / Your Library
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active #Desktop_LeftSidebar_Id {
+  background: var(--spotamp-panel) !important;
+  border: 1px solid var(--spotamp-line) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    2px 0 0 #000;
+}
+
+html.spotamp-active nav[aria-label="Main"] {
+  background: transparent !important;
+  border-top: 2px solid var(--spotamp-green-dim);
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] h1 {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase;
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] button[aria-label="Create"] {
+  border-radius: 0 !important;
+  background: #152015 !important;
+  border: 1px solid #354535 !important;
+  box-shadow: inset 1px 1px 0 #4b5d4b;
+  color: var(--spotamp-text) !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+}
+html.spotamp-active nav[aria-label="Main"] button[aria-label="Create"]:hover {
+  background: #1d2b1d !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] {
+  border-bottom: 1px solid #1b231b !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:hover {
+  background: #182018 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row][aria-selected="true"],
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(a[aria-current="true"]),
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has([aria-current="page"]) {
+  background: linear-gradient(90deg, #173d26 0%, #111b14 70%) !important;
+  box-shadow: inset 2px 0 0 var(--spotamp-green);
+}
+
+html.spotamp-active nav[aria-label="Main"] img {
+  border-radius: 0 !important;
+  border: 1px solid #364436;
+}
+
+html.spotamp-active nav[aria-label="Main"] a {
+  color: var(--spotamp-text) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] span {
+  font-family: var(--spotamp-mono) !important;
+  letter-spacing: -0.02em;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] span[class*="subdued"] {
+  color: var(--spotamp-muted) !important;
+  font-size: 9px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [role="row"]:has([aria-label^="Play "]) {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] input {
+  background: #050805 !important;
+  border: 1px solid #334033 !important;
+  border-radius: 0 !important;
+  color: var(--spotamp-green) !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [role="row"] button,
+html.spotamp-active nav[aria-label="Main"] [role="button"] {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-testid="left-sidebar-footer"] {
+  background: #0b0f0b !important;
+  border-top: 1px solid var(--spotamp-line);
+}
+
+html.spotamp-active [data-testid="LayoutResizer__resize-bar"] {
+  background: #060806 !important;
+  border-left: 1px solid #263026;
+}
+html.spotamp-active .LayoutResizer__input {
+  accent-color: var(--spotamp-green);
+}
+
+/* --------------------------------------------------------------------------
+   Main view chrome
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active main {
+  background-color: #0a0d0a !important;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(120, 255, 150, 0.018) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #0b100b 0%, #080a08 120px);
+  font-family: var(--spotamp-mono);
+}
+
+html.spotamp-active .main-view-container__scroll-node-child {
+  padding-bottom: 268px;
+}
+
+html.spotamp-active main h1,
+html.spotamp-active main h2,
+html.spotamp-active main h3 {
+  font-family: var(--spotamp-mono) !important;
+  letter-spacing: -0.03em;
+}
+
+html.spotamp-active main h2 {
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px !important;
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active main h3 {
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.6px !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] {
+  margin-bottom: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed #283228;
+}
+
+html.spotamp-active [data-testid="component-shelf"]:first-of-type {
+  border-top: 0;
+}
+
+html.spotamp-active [data-testid="rich-title-row-shelf-header"] {
+  border-bottom: 1px solid #222c22;
+}
+
+html.spotamp-active [data-testid="see-all-link"] {
+  color: var(--spotamp-green) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+html.spotamp-active [data-testid="carousel-previous-button"],
+html.spotamp-active [data-testid="carousel-next-button"] {
+  border-radius: 0 !important;
+  background: #121712 !important;
+  border: 1px solid #354135 !important;
+  box-shadow: inset 1px 1px 0 #465446;
+}
+
+/* Generic cards: square panels, small type, no floating dashboard look. */
+html.spotamp-active [data-encore-id="card"] {
+  background: #111611 !important;
+  border: 1px solid #2b352b !important;
+  border-radius: 0 !important;
+  padding: 6px !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    2px 2px 0 #050705;
+  transition: border-color 80ms linear, background 80ms linear;
+}
+
+html.spotamp-active [data-encore-id="card"]:hover {
+  background: #182018 !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-encore-id="card"] img {
+  border-radius: 0 !important;
+  border: 1px solid #3a473a;
+}
+
+html.spotamp-active [data-encore-id="cardTitle"] {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  color: var(--spotamp-text) !important;
+}
+
+html.spotamp-active [data-encore-id="cardSubtitle"] {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  line-height: 1.35 !important;
+  color: var(--spotamp-muted) !important;
+}
+
+html.spotamp-active [data-encore-id="card"] [data-testid="play-button"] {
+  border-radius: 0 !important;
+  background: var(--spotamp-green) !important;
+  border: 1px solid #000 !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  color: #021006 !important;
+}
+
+html.spotamp-active [data-testid="shortcut-image"] {
+  border-radius: 0 !important;
+  border: 1px solid #394639;
+}
+html.spotamp-active [data-testid="shortcut-background"] {
+  border-radius: 0 !important;
+  background: #111611 !important;
+  border: 1px solid #2c372c !important;
+}
+html.spotamp-active [data-testid="shortcut-background"]:hover {
+  border-color: var(--spotamp-green-dim) !important;
+  background: #172017 !important;
+}
+
+/* Chips, tabs and filters */
+html.spotamp-active [role="tablist"] {
+  gap: 4px;
+}
+html.spotamp-active [role="tab"] {
+  border-radius: 0 !important;
+  background: #101510 !important;
+  border: 1px solid #334033 !important;
+  color: var(--spotamp-text) !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 5px 9px !important;
+}
+html.spotamp-active [role="tab"][aria-selected="true"] {
+  background: #1b3a25 !important;
+  border-color: var(--spotamp-green) !important;
+  color: var(--spotamp-green) !important;
+  box-shadow: inset 0 -2px 0 var(--spotamp-green);
+}
+html.spotamp-active [data-encore-id="chip"] {
+  border-radius: 0 !important;
+  background: #111611 !important;
+  border: 1px solid #344034 !important;
+  color: var(--spotamp-text) !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+html.spotamp-active [data-encore-id="chip"][aria-checked="true"] {
+  background: #183a24 !important;
+  border-color: var(--spotamp-green) !important;
+  color: var(--spotamp-green) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Entity headers — playlists, albums, artists, Daily Mix, Liked Songs
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-spotamp-mark="entity-header"] {
+  margin: 8px !important;
+  padding: 0 !important;
+  border: 1px solid #394639 !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(25, 56, 33, 0.42) 0%, rgba(8, 12, 8, 0.96) 62%),
+    #0c110c !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    3px 3px 0 #030503 !important;
+  overflow: visible !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] > div:first-child:not(:has([data-testid="entityTitle"], [data-testid="adaptiveEntityTitle"], [data-testid="playlist-image"], [data-testid="album-image"])) {
+  display: none !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="playlist-image"],
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="album-image"] {
+  width: 156px !important;
+  height: 156px !important;
+  min-width: 156px !important;
+  border: 1px solid #4b5b4b;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    3px 3px 0 #000;
+  background: #050805;
+  overflow: hidden;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] img {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"],
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"] button {
+  color: var(--spotamp-text) !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"] h1 {
+  font-size: clamp(24px, 3.2vw, 42px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+  white-space: normal !important;
+  text-shadow: 2px 2px 0 #000;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="creator-link"],
+html.spotamp-active [data-spotamp-mark="entity-header"] a {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] span,
+html.spotamp-active [data-spotamp-mark="entity-header"] div {
+  font-family: var(--spotamp-mono);
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="edit-image-button"] {
+  border-radius: 0 !important;
+  background: rgba(5, 8, 5, 0.88) !important;
+  border: 1px solid #344034 !important;
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="background-image"],
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] {
+  background-image: none !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] {
+  min-height: 220px;
+  background:
+    linear-gradient(90deg, rgba(17, 46, 27, 0.55) 0%, rgba(7, 10, 7, 0.98) 70%),
+    #0b100b !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] h1 {
+  font-size: clamp(34px, 5vw, 64px) !important;
+}
+
+html.spotamp-active [data-spotamp-page="daily-mix"] [data-spotamp-mark="entity-header"] {
+  background:
+    linear-gradient(90deg, rgba(74, 41, 12, 0.45) 0%, rgba(10, 9, 5, 0.97) 64%),
+    #100d07 !important;
+  border-color: #5a4927 !important;
+}
+
+html.spotamp-active [data-spotamp-page="liked-songs"] [data-spotamp-mark="entity-header"] {
+  background:
+    linear-gradient(90deg, rgba(58, 27, 76, 0.5) 0%, rgba(10, 8, 12, 0.97) 64%),
+    #100b14 !important;
+  border-color: #4d395e !important;
+}
+
+html.spotamp-active [data-spotamp-page="album"] [data-spotamp-mark="entity-header"] {
+  background:
+    linear-gradient(90deg, rgba(56, 29, 22, 0.46) 0%, rgba(11, 9, 7, 0.97) 64%),
+    #100c09 !important;
+  border-color: #5a3b31 !important;
+}
+
+/* Action rows */
+html.spotamp-active [data-testid="action-bar"] {
+  background: transparent !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #222b22;
+}
+
+html.spotamp-active [data-testid="action-bar-row"] {
+  gap: 6px;
+}
+
+html.spotamp-active [data-testid="action-bar"] [data-testid="play-button"] {
+  border-radius: 0 !important;
+  background: var(--spotamp-green) !important;
+  border: 1px solid #001a08 !important;
+  box-shadow:
+    inset 1px 1px 0 #b6ffca,
+    2px 2px 0 #000 !important;
+  color: #021006 !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] button {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] button[aria-label*="Shuffle"],
+html.spotamp-active [data-testid="action-bar"] button[aria-label*="repeat" i],
+html.spotamp-active [data-testid="action-bar"] button[aria-label*="Save"],
+html.spotamp-active [data-testid="action-bar"] button[aria-label*="Download"] {
+  background: #111611 !important;
+  border: 1px solid #334033 !important;
+  box-shadow: inset 1px 1px 0 #465446;
+  color: var(--spotamp-text) !important;
+}
+
+html.spotamp-active [data-testid="playlist-toolbar"],
+html.spotamp-active [data-testid="playlist-tracklist"] {
+  font-family: var(--spotamp-mono) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Track rows and grids
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-testid="track-list"],
+html.spotamp-active [data-testid="playlist-tracklist"] {
+  background: #0b0f0b !important;
+  border: 1px solid #232d23;
+  border-top: 2px solid var(--spotamp-green-dim);
+  box-shadow: inset 1px 1px 0 #000;
+}
+
+html.spotamp-active [data-testid="track-list"] [role="row"],
+html.spotamp-active [data-testid="playlist-tracklist"] [role="row"] {
+  border-bottom: 1px solid #1a221a;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] {
+  border-bottom: 1px solid #1a221a;
+  background: transparent !important;
+  font-family: var(--spotamp-mono);
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:hover {
+  background: #162016 !important;
+  box-shadow: inset 2px 0 0 var(--spotamp-green-dim);
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:has([data-testid="play-button"][aria-label^="Pause"]) {
+  background: linear-gradient(90deg, #183324 0%, #101810 75%) !important;
+  box-shadow: inset 2px 0 0 var(--spotamp-green);
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] {
+  font-size: 11px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [data-testid="internal-track-link"] {
+  color: var(--spotamp-text) !important;
+  font-weight: 400 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:hover [data-testid="internal-track-link"],
+html.spotamp-active [data-testid="tracklist-row"]:has([data-testid="play-button"][aria-label^="Pause"]) [data-testid="internal-track-link"] {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] a[href^="/artist/"] {
+  color: var(--spotamp-muted) !important;
+  font-size: 9px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] img {
+  border-radius: 0 !important;
+  border: 1px solid #334033;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] button {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] button[aria-label^="Play "],
+html.spotamp-active [data-testid="tracklist-row"] button[aria-label^="Pause "] {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:first-child {
+  color: var(--spotamp-green-dim) !important;
+  font-size: 10px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:last-child {
+  color: var(--spotamp-muted) !important;
+  font-size: 10px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row-placeholder"] {
+  background: #0b0f0b !important;
+}
+
+/* Header labels such as #, Title, Album */
+html.spotamp-active [data-testid="track-list"] [role="row"]:first-of-type,
+html.spotamp-active [data-testid="playlist-tracklist"] [role="row"]:first-of-type {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 9px !important;
+  color: var(--spotamp-muted) !important;
+}
+
+/* Artist popular tracks and discography */
+html.spotamp-active [data-testid="artist-page"] [data-testid="tracklist-row"] {
+  border-bottom-color: #1c251c;
+}
+
+html.spotamp-active [data-testid="artist-page"] [data-testid="grid-container"] {
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Search results and generic list rows
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-testid="search-dropdown"] [role="row"] [aria-label^="Play "] {
+  border-radius: 0 !important;
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active main [role="row"]:hover {
+  background-color: #141c14;
+}
+
+html.spotamp-active [data-encore-id="listRow"] {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-encore-id="listRow"]:hover {
+  background: #172017 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Right-hand now-playing rail and lyrics
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-spotamp-player="rail"] {
+  background: #0d120d !important;
+  border: 1px solid #2b352b !important;
+  box-shadow: inset 1px 1px 0 #000;
+  margin: 8px 8px 8px 0;
+  overflow: hidden;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] img {
+  border-radius: 0 !important;
+  border: 1px solid #354235;
+}
+
+html.spotamp-active [data-testid="lyrics-npv-section"] {
+  border-radius: 0 !important;
+  border: 1px solid #3b2b45 !important;
+  background: #120c17 !important;
+  color: #e7d8f2 !important;
+  box-shadow: inset 1px 1px 0 #000;
+}
+
+html.spotamp-active [data-testid="lyrics-line"] {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+  color: #c9a9e3 !important;
+}
+
+html.spotamp-active [data-testid="npv-artist-bio-button"] {
+  background: #111611 !important;
+  border: 1px solid #2d372d !important;
+}
+
+html.spotamp-active [data-testid="npv-artist-bio-avatar"] {
+  border-radius: 0 !important;
+  border: 1px solid #3a483a;
+}
+
+/* --------------------------------------------------------------------------
+   Spotify's bottom bar becomes a compact status / utility bar.
+   Transport, progress and volume are hidden because Webamp owns them.
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-spotamp-hide] {
+  display: none !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] {
+  background: linear-gradient(180deg, #141a14 0%, #090c09 100%) !important;
+  border-top: 1px solid var(--spotamp-green-dim) !important;
+  box-shadow:
+    inset 0 1px 0 #2f4a36,
+    0 -2px 0 #020302 !important;
+  height: var(--spotamp-bar-h) !important;
+  min-height: var(--spotamp-bar-h) !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="now-playing-widget-v2"] {
+  background: transparent !important;
+  border: 0 !important;
+  max-width: 32vw;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="cover-art-image"] {
+  border-radius: 0 !important;
+  border: 1px solid #445244 !important;
+  width: 40px !important;
+  height: 40px !important;
+  box-shadow: 1px 1px 0 #000;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="cover-drop-target"] {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] a {
+  color: var(--spotamp-text) !important;
+  font-size: 10px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] a[href^="/artist/"] {
+  color: var(--spotamp-muted) !important;
+  font-size: 9px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="now-playing-widget-v2-byline"] a {
+  color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-spotamp-utility] {
+  border-radius: 0 !important;
+  background: #101610 !important;
+  border: 1px solid #2d392d !important;
+  color: var(--spotamp-text) !important;
+  box-shadow: inset 1px 1px 0 #3e4c3e;
+  margin-left: 3px;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-spotamp-utility]:hover {
+  background: #192619 !important;
+  color: var(--spotamp-green) !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="add-to-playlist-button"],
+html.spotamp-active [data-testid="now-playing-bar"] button[aria-label="Add to playlist"] {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="playback-position"],
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="playback-duration"] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   Spotamp status strip (above Spotify's bar, below the floating Webamp deck)
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active #spotamp-status,
+.spotamp-status {
+  position: fixed !important;
+  left: 0;
+  right: auto;
+  bottom: var(--spotamp-bar-h, 58px);
+  z-index: 2147482400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Scale as one unit with the Winamp windows. The box is narrowed by the
+     inverse so the painted strip still spans the whole viewport. */
+  width: calc(100vw * var(--spotamp-ui-inv-scale, 1));
+  height: 22px;
+  box-sizing: border-box;
+  transform: scale(var(--spotamp-ui-scale, 1));
+  transform-origin: bottom left;
+  image-rendering: pixelated;
+  padding: 0 8px;
+  background: linear-gradient(180deg, #171d17 0%, #090c09 100%);
+  border-top: 1px solid #394639;
+  border-bottom: 1px solid #000;
+  box-shadow: inset 0 1px 0 #3c4a3c;
+  color: var(--spotamp-muted);
+  font-family: var(--spotamp-mono);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.spotamp-status__brand {
+  color: var(--spotamp-green);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 6px rgba(73, 255, 126, 0.35);
+}
+
+.spotamp-status__slot {
+  color: #586758;
+  border-left: 1px solid #2b352b;
+  padding-left: 8px;
+}
+
+.spotamp-status__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  height: 14px;
+  border: 1px solid #283228;
+  background: #060906;
+  color: var(--spotamp-muted);
+}
+
+.spotamp-status__led {
+  width: 5px;
+  height: 5px;
+  background: var(--spotamp-red);
+  box-shadow: 0 0 4px rgba(255, 91, 77, 0.7);
+}
+.spotamp-status__led[data-state="playing"] {
+  background: var(--spotamp-green);
+  box-shadow: 0 0 5px var(--spotamp-green-dim);
+}
+.spotamp-status__led[data-state="paused"] {
+  background: var(--spotamp-amber);
+  box-shadow: 0 0 4px rgba(255, 202, 58, 0.6);
+}
+.spotamp-status__led[data-state="offline"] {
+  background: var(--spotamp-red);
+}
+
+.spotamp-status__page {
+  color: var(--spotamp-text);
+  max-width: 24vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-left: 1px solid #2b352b;
+  padding-left: 8px;
+}
+
+.spotamp-status__notice {
+  color: #6f806f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spotamp-status__notice[data-tone="warn"] {
+  color: var(--spotamp-amber);
+}
+.spotamp-status__notice[data-tone="muted"] {
+  color: #586758;
+}
+
+.spotamp-status__spacer {
+  flex: 1 1 auto;
+}
+
+.spotamp-status__button,
+.spotamp-help__close {
+  height: 16px;
+  min-width: 44px;
+  padding: 0 6px;
+  border: 1px solid #000;
+  background: #1a221a;
+  color: var(--spotamp-text);
+  font-family: var(--spotamp-mono);
+  font-size: 8px;
+  line-height: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow:
+    inset 1px 1px 0 #445344,
+    inset -1px -1px 0 #0a0d0a;
+  cursor: pointer;
+}
+.spotamp-status__button:hover,
+.spotamp-help__close:hover {
+  background: #263526;
+  color: var(--spotamp-green);
+}
+.spotamp-status__button[data-state="open"] {
+  color: var(--spotamp-green);
+  border-color: #2d4a2d;
+}
+.spotamp-status__button:focus-visible,
+.spotamp-help__close:focus-visible {
+  outline: 1px dotted var(--spotamp-green);
+  outline-offset: 1px;
+}
+
+.spotamp-help {
+  position: fixed !important;
+  right: 12px;
+  bottom: calc(var(--spotamp-bar-h, 58px) + 28px);
+  z-index: 2147482500;
+  width: min(420px, calc((100vw - 24px) * var(--spotamp-ui-inv-scale, 1)));
+  transform: scale(var(--spotamp-ui-scale, 1));
+  transform-origin: bottom right;
+  image-rendering: pixelated;
+  padding: 8px;
+  background: #111611;
+  border: 1px solid #506050;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    4px 4px 0 #000;
+  color: var(--spotamp-text);
+  font-family: var(--spotamp-mono);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.spotamp-help[hidden] {
+  display: none !important;
+}
+.spotamp-help__title {
+  margin-bottom: 6px;
+  padding: 3px 5px;
+  background: #1d3325;
+  border: 1px solid #000;
+  color: var(--spotamp-green);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.spotamp-help ul {
+  margin: 0;
+  padding: 0 0 0 16px;
+  color: #b7c4b7;
+}
+.spotamp-help li {
+  margin-bottom: 5px;
+}
+.spotamp-help__close {
+  display: block;
+  margin: 8px 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Webamp deck
+   -------------------------------------------------------------------------- */
+
+.spotamp-webamp {
+  position: fixed !important;
+  left: 12px;
+  bottom: calc(var(--spotamp-bar-h, 58px) + 30px);
+  /* Exact unscaled bounding box: Webamp centers its windows inside this
+     container. Keeping it exact makes the 2x transform start at 0,0. */
+  width: 567px;
+  height: 234px;
+  z-index: 2147482000;
+  pointer-events: none;
+}
+
+.spotamp-webamp #webamp {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  transform: scale(var(--spotamp-ui-scale, 1));
+  transform-origin: top left;
+  image-rendering: pixelated;
+  pointer-events: auto;
+}
+
+.spotamp-webamp #webamp * {
+  image-rendering: pixelated !important;
+}
+
+/* Webamp windows are left alone (skin assets, drag behavior and menus are
+   original). These only add a readable fallback focus ring. */
+.spotamp-webamp #webamp [tabindex]:focus-visible,
+.spotamp-webamp #webamp button:focus-visible {
+  outline: 1px dotted var(--spotamp-green) !important;
+  outline-offset: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Page-specific accents remain subtle and use the same window chrome.
+   -------------------------------------------------------------------------- */
+
+html.spotamp-page-home main {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(120, 255, 150, 0.018) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #0b120c 0%, #080a08 140px);
+}
+
+html.spotamp-page-search [data-testid="search-input"] {
+  border-color: var(--spotamp-green-dim) !important;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    0 0 0 1px #0c331c !important;
+}
+
+html.spotamp-page-playlist [data-testid="playlist-tracklist"],
+html.spotamp-page-daily-mix [data-testid="playlist-tracklist"],
+html.spotamp-page-liked-songs [data-testid="playlist-tracklist"] {
+  margin-top: 2px;
+}
+
+html.spotamp-page-search [data-testid="component-shelf"] {
+  border-top-style: solid;
+}
+
+/* --------------------------------------------------------------------------
+   Narrow windows: keep the player usable instead of letting it overflow.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 820px) {
+  .spotamp-webamp {
+    left: 4px;
+  }
+  .spotamp-status__slot,
+  .spotamp-status__notice {
+    display: none;
+  }
+  html.spotamp-active .main-view-container__scroll-node-child {
+    padding-bottom: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.spotamp-active *,
+  .spotamp-status,
+  .spotamp-help {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ==========================================================================
+   FULL WINAMP DESKTOP PASS
+   The base rules above keep Spotify functional; this layer replaces the
+   remaining modern-dashboard geometry with compact 1999-era window chrome.
+   ========================================================================== */
+
+html.spotamp-active {
+  --spotamp-bg: #1a1a1a;
+  --spotamp-panel: #242424;
+  --spotamp-panel-2: #2e2e2e;
+  --spotamp-panel-3: #393939;
+  --spotamp-line: #454545;
+  --spotamp-line-bright: #696969;
+  --spotamp-green: #46ff73;
+  --spotamp-green-dim: #1f9c4a;
+  --spotamp-green-dark: #0b351b;
+  --spotamp-amber: #ffcc44;
+  --spotamp-text: #d4ddd4;
+  --spotamp-muted: #8f9a8f;
+  --spotamp-red: #ff5b4d;
+  --spotamp-mono: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
+  --spotamp-lcd: "Lucida Console", "Courier New", ui-monospace, monospace;
+  --spotamp-bar-h: 46px;
+  background-color: #202020 !important;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.09) 0 1px, transparent 1px 3px) !important;
+  color: var(--spotamp-text);
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active body {
+  background: transparent !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active .Root {
+  --panel-gap: 4px !important;
+  background: transparent !important;
+}
+
+html.spotamp-active button,
+html.spotamp-active input,
+html.spotamp-active textarea,
+html.spotamp-active select {
+  font-family: var(--spotamp-mono) !important;
+  border-radius: 0 !important;
+}
+
+html.spotamp-active button {
+  text-transform: none;
+}
+
+html.spotamp-active img,
+html.spotamp-active video,
+html.spotamp-active canvas {
+  border-radius: 0 !important;
+}
+
+html.spotamp-active a {
+  text-underline-offset: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Global titlebar
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active #global-nav-bar {
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 3px 5px !important;
+  background: linear-gradient(180deg, #414141 0%, #262626 52%, #191919 100%) !important;
+  border-bottom: 2px solid #050505 !important;
+  box-shadow:
+    inset 0 1px 0 #6b6b6b,
+    inset 0 -1px 0 #303030,
+    0 1px 0 #000 !important;
+  overflow: visible !important;
+}
+
+html.spotamp-active #global-nav-bar > * {
+  height: 26px !important;
+  min-height: 26px !important;
+}
+
+html.spotamp-active #global-nav-bar a[aria-label="Spotify"],
+html.spotamp-active #global-nav-bar [aria-label="Spotify"] {
+  width: 24px !important;
+  height: 24px !important;
+  transform: scale(0.72);
+  transform-origin: center left;
+}
+
+html.spotamp-active #global-nav-bar form {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  max-width: min(430px, 38vw) !important;
+  border: 2px solid !important;
+  border-color: #050505 #6a6a6a #6a6a6a #050505 !important;
+  background: #020602 !important;
+  box-shadow: inset 1px 1px 0 #000 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active #global-nav-bar form:focus-within {
+  border-color: #050505 var(--spotamp-green-dim) var(--spotamp-green-dim) #050505 !important;
+}
+
+html.spotamp-active #global-nav-bar form div:has(> [data-testid="search-input"]) {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+html.spotamp-active [data-testid="search-input"] {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: 21px !important;
+  min-height: 21px !important;
+  max-height: 21px !important;
+  line-height: 21px !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 11px !important;
+  color: var(--spotamp-green) !important;
+  padding: 0 28px !important;
+}
+
+html.spotamp-active #global-nav-bar form button[aria-label="Search"] {
+  position: absolute !important;
+  left: 1px !important;
+  top: 1px !important;
+  width: 22px !important;
+  height: 21px !important;
+  min-width: 22px !important;
+  min-height: 21px !important;
+  padding: 0 !important;
+}
+
+html.spotamp-active [data-testid="upgrade-button"] span {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* Spotify paints a large colored hero gradient behind entity action bars.
+   Replace it with the charcoal window background. */
+html.spotamp-active div:has(> [data-testid="playlist-toolbar"]) > div:first-child {
+  background: none !important;
+  background-image: none !important;
+}
+
+html.spotamp-active [data-testid="home-button"],
+html.spotamp-active [data-testid="browse-button"],
+html.spotamp-active #global-nav-bar button[aria-label="Home"],
+html.spotamp-active #global-nav-bar button[aria-label="Back"],
+html.spotamp-active #global-nav-bar button[aria-label="Forward"] {
+  min-width: 24px !important;
+  min-height: 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  background: linear-gradient(180deg, #3a3a3a, #222) !important;
+  border: 1px solid !important;
+  border-color: #6a6a6a #060606 #060606 #6a6a6a !important;
+  box-shadow: none !important;
+}
+
+html.spotamp-active [data-testid="home-button"]:hover,
+html.spotamp-active [data-testid="browse-button"]:hover,
+html.spotamp-active #global-nav-bar button[aria-label="Home"]:hover,
+html.spotamp-active #global-nav-bar button[aria-label="Back"]:hover,
+html.spotamp-active #global-nav-bar button[aria-label="Forward"]:hover {
+  background: linear-gradient(180deg, #4a4a4a, #2a2a2a) !important;
+  border-color: #8a8a8a #060606 #060606 #8a8a8a !important;
+}
+
+html.spotamp-active [data-testid="upgrade-button"],
+html.spotamp-active [aria-label="Install App"] {
+  height: 22px !important;
+  padding: 0 6px !important;
+  border: 1px solid !important;
+  border-color: #6a6a6a #060606 #060606 #6a6a6a !important;
+  background: linear-gradient(180deg, #3a3a3a, #222) !important;
+  color: #d8ded8 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.04em !important;
+  box-shadow: none !important;
+}
+
+html.spotamp-active [data-testid="user-widget-avatar"] {
+  width: 22px !important;
+  height: 22px !important;
+  border: 1px solid #6a6a6a !important;
+}
+
+/* --------------------------------------------------------------------------
+   Library / sidebar — a classic playlist window
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active #Desktop_LeftSidebar_Id {
+  --left-sidebar-width: 264 !important;
+  width: 264px !important;
+  min-width: 264px !important;
+  max-width: 264px !important;
+  flex: 0 0 264px !important;
+  margin: 2px 0 2px 2px !important;
+  padding: 0 !important;
+  background: #202020 !important;
+  border: 2px solid !important;
+  border-color: #5f5f5f #060606 #060606 #5f5f5f !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active #Desktop_LeftSidebar_Id > div:first-child {
+  background: linear-gradient(180deg, #3b3b3b 0%, #242424 100%) !important;
+  border-bottom: 1px solid #050505 !important;
+  box-shadow: inset 0 1px 0 #646464 !important;
+  padding: 3px 5px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] {
+  background: #181818 !important;
+  border-top: 0 !important;
+  padding: 2px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] h1 {
+  font-size: 10px !important;
+  line-height: 14px !important;
+  letter-spacing: 0.12em !important;
+  color: #dde5dd !important;
+  text-shadow: 0 1px 0 #000;
+}
+
+html.spotamp-active nav[aria-label="Main"] button[aria-label="Create"] {
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 6px !important;
+  font-size: 8px !important;
+  background: linear-gradient(180deg, #3c3c3c, #222) !important;
+  border: 1px solid !important;
+  border-color: #686868 #060606 #060606 #686868 !important;
+  box-shadow: none !important;
+  color: #d6ddd6 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(img) {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding: 0 3px !important;
+  border-bottom: 1px solid #101010 !important;
+  background: #181818 !important;
+}
+
+/* Collapse Spotify's 48px artwork cell into a 22px Winamp list icon so the
+   playlist rows stay compact without clipping their own contents. */
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  height: 24px !important;
+  min-height: 0 !important;
+  max-height: 24px !important;
+  padding: 0 2px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div[style*="position: absolute"],
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div[class*="list-row"]:first-child {
+  height: 24px !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] div:has(> img) {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  flex: 0 0 22px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] [role="gridcell"] > div > div:not(:has(img)):not(:first-child) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: 22px !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] [data-testid="play-button"] {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(img):nth-child(even) {
+  background: #1b1b1b !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(img):hover {
+  background: #293329 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row][aria-selected="true"],
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(a[aria-current="true"]),
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has([aria-current="page"]) {
+  background: #0a2564 !important;
+  box-shadow: inset 0 0 0 1px #4c77c9 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] img {
+  width: 20px !important;
+  height: 20px !important;
+  border: 1px solid #444 !important;
+  box-shadow: 1px 1px 0 #000;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] span {
+  font-size: 10px !important;
+  line-height: 11px !important;
+  letter-spacing: 0 !important;
+  color: #d6ded6 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] p[data-encore-id="listRowTitle"] {
+  height: 10px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  font-weight: 400 !important;
+  color: #d6ded6 !important;
+  white-space: nowrap !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] p[data-encore-id="listRowTitle"] span {
+  display: block !important;
+  overflow: hidden !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  text-overflow: ellipsis !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] p[data-encore-id="listRowSubtitle"] {
+  display: block !important;
+  height: 9px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  font-size: 8px !important;
+  line-height: 9px !important;
+  color: #879487 !important;
+  white-space: nowrap !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] p[data-encore-id="listRowSubtitle"] span {
+  font-size: 8px !important;
+  line-height: 9px !important;
+  color: #879487 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] [role="gridcell"] > div > div:last-child,
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] [class*="list-row__column"] {
+  justify-content: center !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row][aria-selected="true"] p[data-encore-id="listRowTitle"],
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row][aria-selected="true"] p[data-encore-id="listRowSubtitle"] {
+  color: #fff !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row][aria-selected="true"] span,
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row]:has(a[aria-current="true"]) span {
+  color: #fff !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] input {
+  height: 21px !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 9px !important;
+  border: 2px solid !important;
+  border-color: #050505 #555 #555 #050505 !important;
+  background: #030603 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [role="row"]:has([aria-label^="Play "]) {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-testid="left-sidebar-footer"] {
+  background: #1b1b1b !important;
+  border-top: 1px solid #4b4b4b !important;
+}
+
+html.spotamp-active [data-testid="LayoutResizer__resize-bar"] {
+  background: #202020 !important;
+  border-left: 1px solid #4b4b4b !important;
+}
+
+/* --------------------------------------------------------------------------
+   Main view — one framed application window
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active main {
+  margin: 2px 0 2px 2px !important;
+  padding: 0 !important;
+  background: #0d0d0d !important;
+  background-image:
+    linear-gradient(180deg, rgba(50, 80, 55, 0.12), transparent 84px),
+    repeating-linear-gradient(0deg, rgba(140, 255, 160, 0.013) 0 1px, transparent 1px 3px) !important;
+  border: 2px solid !important;
+  border-color: #5f5f5f #060606 #060606 #5f5f5f !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active .main-view-container__scroll-node-child {
+  padding-bottom: 236px !important;
+}
+
+html.spotamp-active .contentSpacing {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-top: 4px !important;
+}
+
+html.spotamp-active main h1,
+html.spotamp-active main h2,
+html.spotamp-active main h3,
+html.spotamp-active main p,
+html.spotamp-active main span,
+html.spotamp-active main a,
+html.spotamp-active main div {
+  letter-spacing: 0 !important;
+}
+
+html.spotamp-active main h2 {
+  font-size: 10px !important;
+  line-height: 13px !important;
+  letter-spacing: 0.1em !important;
+  color: var(--spotamp-green) !important;
+  text-shadow: 0 1px 0 #000;
+}
+
+html.spotamp-active main h3 {
+  font-size: 10px !important;
+  letter-spacing: 0.05em !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] {
+  margin: 0 0 5px !important;
+  padding: 3px 4px 4px !important;
+  background: #151515 !important;
+  border: 1px solid !important;
+  border-color: #353535 #090909 #090909 #353535 !important;
+  box-shadow: inset 1px 1px 0 #3e3e3e !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"]:first-of-type {
+  border-top: 1px solid #353535 !important;
+}
+
+html.spotamp-active [data-testid="rich-title-row-shelf-header"] {
+  margin: -3px -4px 4px !important;
+  padding: 2px 4px !important;
+  background: linear-gradient(90deg, #353535 0%, #202020 70%, #191919 100%) !important;
+  border-bottom: 1px solid #050505 !important;
+  box-shadow: inset 0 1px 0 #535353;
+  min-height: 16px !important;
+}
+
+html.spotamp-active [data-testid="see-all-link"] {
+  font-size: 8px !important;
+  color: #b9c6b9 !important;
+  border: 1px solid #4b4b4b !important;
+  background: #242424 !important;
+  padding: 1px 4px !important;
+}
+
+html.spotamp-active [data-testid="see-all-link"]:hover {
+  color: var(--spotamp-green) !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+/* Dense card grid instead of a modern carousel. */
+html.spotamp-active [data-testid="component-shelf"] {
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] div:has(> [data-testid="carousel-scroller"]) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow-x: hidden !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"][role="grid"] {
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)) !important;
+  gap: 3px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"][role="grid"] > * {
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+html.spotamp-active [data-encore-id="card"],
+html.spotamp-active [data-encore-id="card"] > *,
+html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"][role="grid"] > div {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+html.spotamp-active [data-encore-id="card"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 3px !important;
+  background: #191919 !important;
+  border: 1px solid !important;
+  border-color: #3d3d3d #080808 #080808 #3d3d3d !important;
+  box-shadow: inset 1px 1px 0 #474747 !important;
+}
+
+html.spotamp-active [data-encore-id="card"]:hover {
+  background: #202a20 !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-encore-id="card"] [data-testid="card-image"],
+html.spotamp-active [data-encore-id="card"] img {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  border: 1px solid #444 !important;
+}
+
+html.spotamp-active [data-encore-id="cardTitle"] {
+  font-size: 10px !important;
+  line-height: 12px !important;
+  color: #d9e1d9 !important;
+}
+
+html.spotamp-active [data-encore-id="cardSubtitle"] {
+  font-size: 8px !important;
+  line-height: 10px !important;
+  color: #8b978b !important;
+}
+
+html.spotamp-active [data-encore-id="card"] [data-testid="play-button"] {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  border: 1px solid #000 !important;
+  background: #2b2b2b !important;
+  color: var(--spotamp-green) !important;
+  box-shadow:
+    inset 1px 1px 0 #666,
+    inset -1px -1px 0 #0a0a0a !important;
+}
+
+html.spotamp-active [data-encore-id="card"] [data-testid="play-button"]:hover {
+  background: #1d3b27 !important;
+}
+
+/* The shortcut shelf becomes a compact bookmark list, not a second card wall. */
+html.spotamp-active section:has([data-testid="shortcut-image"]):not(:has([data-testid="component-shelf"])) {
+  margin-bottom: 4px !important;
+  padding: 3px !important;
+  background: #151515 !important;
+  border: 1px solid !important;
+  border-color: #353535 #090909 #090909 #353535 !important;
+}
+
+html.spotamp-active [data-testid="carousel-scroller"]:has([data-testid="shortcut-image"]) {
+  overflow-x: hidden !important;
+}
+
+html.spotamp-active [data-testid="carousel-scroller"]:has([data-testid="shortcut-image"]) > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html.spotamp-active #main [role="grid"][role="grid"][role="grid"]:has([data-testid="shortcut-image"]) {
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) !important;
+  gap: 2px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) {
+  display: flex !important;
+  align-items: center !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 2px 3px !important;
+  background: #1c1c1c !important;
+  border: 1px solid !important;
+  border-color: #414141 #080808 #080808 #414141 !important;
+}
+
+/* Home shelves: turn Spotify's carousel cards into a compact Winamp file
+   list (small art, one dense row per recommendation). */
+/* Spotify's oversized prompted-playlist tiles collapse into 500px-tall
+   panels; the shelf lists below carry the same recommendations. */
+html.spotamp-page-home [data-testid="grid-container"] {
+  display: none !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 4px 3px !important;
+  background: #0c0f0c !important;
+  border: 2px solid !important;
+  border-color: #4a4a4a #060606 #060606 #4a4a4a !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"],
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] > div,
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] > div > div {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] > div > div {
+  display: block !important;
+  width: 100% !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-testid="carousel-scroller"] div:has([data-encore-id="card"]) {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 205px !important;
+  overflow: hidden !important;
+  grid-template-columns: 100% !important;
+  grid-auto-flow: row !important;
+}
+
+html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"][role="grid"]:not(:has([data-testid="shortcut-image"])),
+html.spotamp-active #main [data-testid="component-shelf"] div[role="presentation"]:has(> [data-encore-id="card"]) {
+  display: block !important;
+  grid-template-columns: 100% !important;
+  grid-auto-flow: row !important;
+  gap: 0 !important;
+  max-height: 205px !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"]:nth-of-type(n + 7) {
+  display: none !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 1px 3px !important;
+  border-bottom: 1px solid #171d17 !important;
+  border-radius: 0 !important;
+  background: #0e120e !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"]:nth-of-type(even) {
+  background: #111611 !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"]:hover {
+  background: #203020 !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] > div:has(img) {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  flex: 0 0 28px !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] > div:has(img) div {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] img {
+  width: 26px !important;
+  height: 26px !important;
+  object-fit: cover !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] > div:last-child {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 24px !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] p,
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] [data-encore-id="text"] {
+  font-size: 9px !important;
+  line-height: 10px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] [data-encore-id="text"]:not(:first-child),
+html.spotamp-active [data-testid="component-shelf"] [data-encore-id="card"] p + p {
+  font-size: 8px !important;
+  line-height: 9px !important;
+  color: var(--spotamp-muted) !important;
+}
+
+html.spotamp-active [data-testid="shortcut-image"] {
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: cover !important;
+  border: 1px solid #555 !important;
+}
+
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) p,
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) [data-encore-id="text"] {
+  font-size: 9px !important;
+  line-height: 11px !important;
+}
+
+html.spotamp-active [role="tablist"] {
+  gap: 3px !important;
+  padding: 3px 0 !important;
+}
+
+html.spotamp-active [role="tab"] {
+  height: 22px !important;
+  padding: 2px 8px !important;
+  font-size: 8px !important;
+  background: linear-gradient(180deg, #363636, #202020) !important;
+  border: 1px solid !important;
+  border-color: #656565 #090909 #090909 #656565 !important;
+  color: #cfd7cf !important;
+}
+
+html.spotamp-active [role="tab"][aria-selected="true"] {
+  background: #0a2a62 !important;
+  border-color: #5c84ce #071a3d #071a3d #5c84ce !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px #2f55a0 !important;
+}
+
+html.spotamp-active [data-encore-id="chip"] {
+  height: 21px !important;
+  padding: 1px 7px !important;
+  font-size: 8px !important;
+  border: 1px solid !important;
+  border-color: #5a5a5a #080808 #080808 #5a5a5a !important;
+  background: #242424 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Entity headers and actions
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-spotamp-mark="entity-header"] {
+  margin: 3px 3px 0 !important;
+  padding: 7px !important;
+  gap: 9px !important;
+  height: 116px !important;
+  min-height: 116px !important;
+  max-height: 116px !important;
+  align-items: center !important;
+  border: 2px solid !important;
+  border-color: #5f5f5f #060606 #060606 #5f5f5f !important;
+  background: linear-gradient(90deg, #243026 0%, #171b17 52%, #121212 100%) !important;
+  box-shadow: inset 0 0 0 1px #303830 !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="playlist-image"],
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="album-image"],
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entity-image"] {
+  width: 96px !important;
+  height: 96px !important;
+  min-width: 96px !important;
+  border: 1px solid !important;
+  border-color: #6b6b6b #050505 #050505 #6b6b6b !important;
+  box-shadow: 2px 2px 0 #000 !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"],
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"] button {
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="entityTitle"] h1 {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 24px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+  white-space: normal !important;
+  text-shadow: 2px 2px 0 #000 !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] span,
+html.spotamp-active [data-spotamp-mark="entity-header"] div,
+html.spotamp-active [data-spotamp-mark="entity-header"] p {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  line-height: 13px !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="creator-link"],
+html.spotamp-active [data-spotamp-mark="entity-header"] a {
+  color: #c4e6cc !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="creator-link"]:hover,
+html.spotamp-active [data-spotamp-mark="entity-header"] a:hover {
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="background-image"],
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] {
+  background-image: none !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] > .contentSpacing {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 96px !important;
+  padding: 0 4px !important;
+  align-items: center !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] [data-testid="adaptiveEntityTitle"] {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 28px !important;
+  overflow: visible !important;
+  font-size: 28px !important;
+  line-height: 1.05 !important;
+  color: #fff !important;
+  text-shadow: 2px 2px 0 #000 !important;
+}
+
+html.spotamp-active [data-testid="adaptiveEntityTitle"] [data-encore-id="adaptiveTitle"] {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  font-size: 28px !important;
+  line-height: 29px !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] > .contentSpacing > div:empty {
+  display: none !important;
+}
+
+html.spotamp-active [data-spotamp-mark="entity-header"] > .contentSpacing > div {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 96px !important;
+  align-self: center !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] {
+  min-height: 116px !important;
+  background: linear-gradient(90deg, #243026 0%, #151815 60%, #101010 100%) !important;
+}
+
+html.spotamp-active [data-spotamp-page="artist"] [data-testid="entity-header"] h1 {
+  font-size: 28px !important;
+}
+
+html.spotamp-active [data-spotamp-page="daily-mix"] [data-spotamp-mark="entity-header"] {
+  background: linear-gradient(90deg, #3c331d 0%, #1d1a12 55%, #121212 100%) !important;
+  border-color: #6b6040 #060606 #060606 #6b6040 !important;
+}
+
+html.spotamp-active [data-spotamp-page="liked-songs"] [data-spotamp-mark="entity-header"] {
+  background: linear-gradient(90deg, #33253d 0%, #1c1721 55%, #121212 100%) !important;
+  border-color: #5f4a6e #060606 #060606 #5f4a6e !important;
+}
+
+html.spotamp-active [data-spotamp-page="album"] [data-spotamp-mark="entity-header"] {
+  background: linear-gradient(90deg, #3a2923 0%, #1d1815 55%, #121212 100%) !important;
+  border-color: #6a4a3f #060606 #060606 #6a4a3f !important;
+}
+
+html.spotamp-active div:has(> [data-testid="playlist-toolbar"]) {
+  background: #171717 !important;
+  background-image: none !important;
+}
+
+html.spotamp-active [data-testid="playlist-toolbar"] {
+  padding: 2px 6px !important;
+  background: transparent !important;
+  border-bottom: 1px solid #2a2a2a !important;
+}
+
+html.spotamp-active [data-testid="playlist-toolbar"] button {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 7px !important;
+  border: 1px solid !important;
+  border-color: #5a5a5a #070707 #070707 #5a5a5a !important;
+  background: linear-gradient(180deg, #343434, #1e1e1e) !important;
+  color: #d5ddd5 !important;
+  font-size: 9px !important;
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-testid="playlist-toolbar"] button:hover {
+  color: var(--spotamp-green) !important;
+  border-color: var(--spotamp-green-dim) !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] {
+  padding: 4px 8px !important;
+  background: linear-gradient(180deg, #202020, #151515) !important;
+  border-bottom: 2px solid #060606 !important;
+  box-shadow: inset 0 1px 0 #3d3d3d;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-testid="action-bar-row"] {
+  gap: 4px !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] [data-testid="play-button"] {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
+  border: 1px solid !important;
+  border-color: #8dffa9 #053b14 #053b14 #8dffa9 !important;
+  background: #1f9e4c !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  color: #021006 !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] [data-testid="play-button"]:hover {
+  background: #29c45f !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] button:not([data-testid="play-button"]),
+html.spotamp-active [data-testid="action-bar"] a[role="button"] {
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  padding: 0 7px !important;
+  border-radius: 0 !important;
+  font-size: 9px !important;
+  border: 1px solid !important;
+  border-color: #616161 #070707 #070707 #616161 !important;
+  background: linear-gradient(180deg, #383838, #202020) !important;
+  box-shadow: none !important;
+  color: #d5ddd5 !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] button:hover,
+html.spotamp-active [data-testid="action-bar"] a[role="button"]:hover {
+  background: linear-gradient(180deg, #454545, #272727) !important;
+  color: var(--spotamp-green) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Playlist / track table
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-testid="playlist-toolbar"],
+html.spotamp-active [data-testid="playlist-tracklist"],
+html.spotamp-active [data-testid="track-list"] {
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active [data-testid="track-list"],
+html.spotamp-active [data-testid="playlist-tracklist"] {
+  margin: 2px 3px 0 !important;
+  padding: 0 2px !important;
+  background: #080b08 !important;
+  border: 2px solid !important;
+  border-color: #050505 #565656 #565656 #050505 !important;
+  box-shadow: inset 0 0 0 1px #000 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] {
+  min-height: 24px !important;
+  height: 24px !important;
+  background: #0c100c !important;
+  border-bottom: 1px solid #151b15 !important;
+  box-shadow: none !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:nth-of-type(even) {
+  background: #0e130e !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:hover {
+  background: #203020 !important;
+  box-shadow: inset 2px 0 0 var(--spotamp-green) !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:has([data-testid="play-button"][aria-label^="Pause"]) {
+  background: #0a2564 !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px #4c77c9 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] {
+  padding: 0 3px !important;
+  font-size: 10px !important;
+  line-height: 18px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] > [role="gridcell"] {
+  align-self: center !important;
+  height: 22px !important;
+  min-height: 0 !important;
+  max-height: 22px !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] > [role="gridcell"] > div {
+  min-height: 0 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] div,
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] span,
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] a {
+  line-height: 11px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"] div:has(> [data-testid="internal-track-link"]) {
+  height: 22px !important;
+  max-height: 22px !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [data-testid="internal-track-link"],
+html.spotamp-active [data-testid="tracklist-row"] a[href^="/artist/"] {
+  display: block !important;
+  height: 11px !important;
+  line-height: 11px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] img {
+  width: 20px !important;
+  height: 20px !important;
+  border: 1px solid #3c3c3c !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [data-testid="internal-track-link"] {
+  font-size: 10px !important;
+  color: #d9e3d9 !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] a[href^="/artist/"] {
+  font-size: 8px !important;
+  color: #8b978b !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:hover [data-testid="internal-track-link"],
+html.spotamp-active [data-testid="tracklist-row"]:has([data-testid="play-button"][aria-label^="Pause"]) [data-testid="internal-track-link"] {
+  color: #fff !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:first-child {
+  color: #7e9e82 !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 9px !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"]:has([data-testid="play-button"][aria-label^="Pause"]) [role="gridcell"]:first-child {
+  color: #fff !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:last-child {
+  color: #a7b3a7 !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 9px !important;
+}
+
+html.spotamp-active [data-testid="track-list"] [role="row"]:first-of-type,
+html.spotamp-active [data-testid="playlist-tracklist"] [role="row"]:first-of-type {
+  min-height: 18px !important;
+  height: 18px !important;
+  background: #202020 !important;
+  border-bottom: 1px solid #050505 !important;
+  color: #b8c5b8 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.08em !important;
+}
+
+html.spotamp-active [data-testid="tracklist-row-placeholder"] {
+  background: #0c100c !important;
+}
+
+html.spotamp-active [data-testid="artist-page"] [data-testid="tracklist-row"] {
+  border-bottom-color: #151b15 !important;
+}
+
+/* Search and generic list rows */
+html.spotamp-active [data-testid="search-dropdown"] {
+  background: #141414 !important;
+  border: 2px solid !important;
+  border-color: #5f5f5f #060606 #060606 #5f5f5f !important;
+  box-shadow: 3px 3px 0 #000 !important;
+  padding: 2px !important;
+}
+
+html.spotamp-active [data-testid="search-dropdown"] [role="row"] {
+  min-height: 30px !important;
+  padding: 1px 4px !important;
+  border-bottom: 1px solid #242424 !important;
+}
+
+html.spotamp-active [data-testid="search-dropdown"] [role="row"]:hover {
+  background: #0a2564 !important;
+}
+
+html.spotamp-active [data-testid="search-dropdown"] img {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+html.spotamp-active [data-encore-id="listRow"] {
+  min-height: 32px !important;
+  border-bottom: 1px solid #1a1a1a !important;
+  border-radius: 0 !important;
+}
+
+html.spotamp-active [data-encore-id="listRow"]:hover {
+  background: #1c2a1c !important;
+}
+
+/* --------------------------------------------------------------------------
+   Now-playing rail
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active div:has(> #Desktop_PanelContainer_Id) {
+  width: 282px !important;
+  min-width: 240px !important;
+  max-width: 300px !important;
+  flex: 0 0 282px !important;
+}
+
+html.spotamp-active #Desktop_PanelContainer_Id {
+  margin: 2px 2px 2px 0 !important;
+  padding: 0 !important;
+  background: #202020 !important;
+  border: 2px solid !important;
+  border-color: #5f5f5f #060606 #060606 #5f5f5f !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] {
+  margin: 0 !important;
+  padding: 3px !important;
+  background: #181818 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] img {
+  max-width: 100% !important;
+  max-height: 178px !important;
+  object-fit: contain !important;
+  border: 1px solid #4b4b4b !important;
+  box-shadow: 1px 1px 0 #000;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] h1,
+html.spotamp-active [data-spotamp-player="rail"] h2,
+html.spotamp-active [data-spotamp-player="rail"] h3 {
+  font-size: 12px !important;
+  line-height: 15px !important;
+  letter-spacing: 0 !important;
+  color: #eef4ee !important;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] span,
+html.spotamp-active [data-spotamp-player="rail"] a,
+html.spotamp-active [data-spotamp-player="rail"] p {
+  font-size: 9px !important;
+  line-height: 12px !important;
+}
+
+html.spotamp-active [data-spotamp-player="rail"] button {
+  border-radius: 0 !important;
+  font-size: 8px !important;
+}
+
+html.spotamp-active [data-testid="lyrics-npv-section"] {
+  margin-top: 3px !important;
+  padding: 4px !important;
+  background: #030703 !important;
+  border: 2px solid !important;
+  border-color: #050505 #3d5b42 #3d5b42 #050505 !important;
+  color: #9dffb2 !important;
+  box-shadow: inset 0 0 10px rgba(60, 255, 110, 0.07) !important;
+}
+
+html.spotamp-active [data-testid="lyrics-line"] {
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 10px !important;
+  line-height: 15px !important;
+  color: #93ffab !important;
+  text-shadow: 0 0 4px rgba(73, 255, 126, 0.28);
+}
+
+html.spotamp-active [data-testid="npv-artist-bio-button"] {
+  height: 22px !important;
+  background: linear-gradient(180deg, #383838, #202020) !important;
+  border: 1px solid !important;
+  border-color: #626262 #070707 #070707 #626262 !important;
+  color: #d6ded6 !important;
+}
+
+html.spotamp-active [data-testid="npv-artist-bio-avatar"] {
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #4b4b4b !important;
+}
+
+/* --------------------------------------------------------------------------
+   Bottom utility bar and status readouts
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active [data-testid="now-playing-bar"] {
+  height: var(--spotamp-bar-h) !important;
+  min-height: var(--spotamp-bar-h) !important;
+  background: linear-gradient(180deg, #363636 0%, #1d1d1d 45%, #121212 100%) !important;
+  border-top: 2px solid #050505 !important;
+  box-shadow:
+    inset 0 1px 0 #5c5c5c,
+    0 -1px 0 #000 !important;
+  padding: 2px 5px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="cover-art-image"] {
+  width: 32px !important;
+  height: 32px !important;
+  border: 1px solid !important;
+  border-color: #6a6a6a #050505 #050505 #6a6a6a !important;
+  box-shadow: 1px 1px 0 #000 !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-testid="cover-drop-target"] {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] a {
+  font-size: 9px !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] a[href^="/artist/"] {
+  font-size: 8px !important;
+  color: #8e9a8e !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-spotamp-utility] {
+  width: 24px !important;
+  height: 22px !important;
+  min-width: 24px !important;
+  margin-left: 2px !important;
+  background: linear-gradient(180deg, #383838, #202020) !important;
+  border: 1px solid !important;
+  border-color: #616161 #070707 #070707 #616161 !important;
+  color: #cdd6cd !important;
+  box-shadow: none !important;
+}
+
+html.spotamp-active [data-testid="now-playing-bar"] [data-spotamp-utility]:hover {
+  background: #1e3a27 !important;
+  color: var(--spotamp-green) !important;
+}
+
+.spotamp-status {
+  height: 20px !important;
+  gap: 6px !important;
+  padding: 0 5px !important;
+  background: linear-gradient(180deg, #303030 0%, #191919 100%) !important;
+  border-top: 1px solid #5d5d5d !important;
+  border-bottom: 1px solid #000 !important;
+  box-shadow: inset 0 1px 0 #454545 !important;
+  font-size: 8px !important;
+}
+
+.spotamp-status__brand {
+  color: var(--spotamp-green) !important;
+  text-shadow: 0 0 5px rgba(73, 255, 126, 0.3) !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 9px !important;
+}
+
+.spotamp-status__page {
+  color: #d6ded6 !important;
+  border-left: 1px solid #4b4b4b !important;
+  font-size: 8px !important;
+}
+
+.spotamp-status__shuffle {
+  height: 16px !important;
+  min-width: 62px !important;
+  padding: 0 5px !important;
+  border: 1px solid !important;
+  border-color: #050505 #4e4e4e #4e4e4e #050505 !important;
+  background: #030803 !important;
+  color: var(--spotamp-green) !important;
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 8px !important;
+  letter-spacing: 0.04em !important;
+  box-shadow: inset 1px 1px 0 #000 !important;
+}
+
+.spotamp-status__shuffle[data-mode="on"] {
+  color: #73ff94 !important;
+}
+
+.spotamp-status__shuffle[data-mode="smart"] {
+  color: #ffd34e !important;
+  border-color: #050505 #665421 #665421 #050505 !important;
+  text-shadow: 0 0 4px rgba(255, 211, 78, 0.45);
+}
+
+.spotamp-status__shuffle:hover {
+  background: #0a1a0c !important;
+  color: #fff !important;
+}
+
+.spotamp-status__button,
+.spotamp-help__close {
+  height: 16px !important;
+  min-width: 40px !important;
+  font-size: 8px !important;
+  border: 1px solid !important;
+  border-color: #5f5f5f #070707 #070707 #5f5f5f !important;
+  background: linear-gradient(180deg, #383838, #202020) !important;
+  box-shadow: none !important;
+}
+
+.spotamp-status__button:hover,
+.spotamp-help__close:hover {
+  background: linear-gradient(180deg, #4a4a4a, #272727) !important;
+  color: var(--spotamp-green) !important;
+}
+
+.spotamp-help {
+  background: #222 !important;
+  border: 2px solid !important;
+  border-color: #6a6a6a #050505 #050505 #6a6a6a !important;
+  box-shadow: 4px 4px 0 #000 !important;
+  font-size: 10px !important;
+}
+
+.spotamp-help__title {
+  background: linear-gradient(90deg, #31543a, #1d2b20) !important;
+  border: 1px solid #000 !important;
+  font-size: 9px !important;
+}
+
+.spotamp-webamp {
+  bottom: calc(var(--spotamp-bar-h, 46px) + 24px) !important;
+}
+
+@media (max-width: 1100px) {
+  html.spotamp-active #Desktop_LeftSidebar_Id {
+    width: 226px !important;
+    min-width: 226px !important;
+    max-width: 226px !important;
+    flex-basis: 226px !important;
+  }
+
+  html.spotamp-active div:has(> #Desktop_PanelContainer_Id) {
+    width: 236px !important;
+    min-width: 210px !important;
+    flex-basis: 236px !important;
+  }
+
+  html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"] {
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 820px) {
+  html.spotamp-active main {
+    margin-left: 2px !important;
+  }
+
+  html.spotamp-active .main-view-container__scroll-node-child {
+    padding-bottom: 220px !important;
+  }
+
+  html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"] {
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important;
+  }
+}
+
+/* Final details: readable index numerals and a compact bevel play icon. */
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:first-child span,
+html.spotamp-active [data-testid="tracklist-row"] [role="gridcell"]:first-child div {
+  font-family: var(--spotamp-lcd) !important;
+  font-size: 9px !important;
+  line-height: 11px !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] [data-testid="play-button"] {
+  background: var(--spotamp-green) !important;
+  box-shadow:
+    inset 1px 1px 0 #c8ffd8,
+    2px 2px 0 #000 !important;
+}
+
+html.spotamp-active [data-testid="action-bar"] [data-testid="play-button"] svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: #021006 !important;
+  fill: #021006 !important;
+}
+
+/* Keep the shelf file-lists single-column at narrow viewports. */
+@media (max-width: 1100px) {
+  html.spotamp-active #main [data-testid="component-shelf"] [role="grid"][role="grid"][role="grid"]:not(:has([data-testid="shortcut-image"])) {
+    grid-template-columns: 100% !important;
+    grid-auto-flow: row !important;
+  }
+}
+
+/* The shortcut tile paints an absolute hover layer after its label; keep it
+   behind the text so the playlist name is readable in the compact bar. */
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) > div:last-child {
+  background: transparent !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) > div:nth-child(2) {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+html.spotamp-active [data-testid="shortcut-image"] {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+/* Shortcut bar: one small cover, one readable label, no oversized grey cell. */
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) > a,
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) > a > div,
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) > a > div > div {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  flex: 0 0 28px !important;
+  background: transparent !important;
+}
+
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) p,
+html.spotamp-active div:has(> a [data-testid="shortcut-image"]) [data-encore-id="text"] {
+  font-family: var(--spotamp-mono) !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  font-weight: 700 !important;
+  color: #e6eee6 !important;
+  white-space: nowrap !important;
+}
+
+/* Spotify measures card titles with JS and pins them to height:0 after our
+   density overrides. Restore one readable title line plus a small byline. */
+html.spotamp-active #main [data-encore-id="card"] p[data-encore-id="cardTitle"] {
+  height: 10px !important;
+  max-height: 10px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+html.spotamp-active #main [data-encore-id="card"] [data-encore-id="cardSubtitle"] {
+  height: 9px !important;
+  max-height: 9px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  font-size: 8px !important;
+  line-height: 9px !important;
+  white-space: nowrap !important;
+}
+
+html.spotamp-active #main [data-encore-id="card"] [data-encore-id="cardSubtitle"] [data-encore-id="text"] {
+  font-size: 8px !important;
+  line-height: 9px !important;
+  color: var(--spotamp-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Winamp folder tree — the library is a disk tree, not a modern sidebar
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active .spotamp-tree {
+  flex: 0 0 auto !important;
+  margin: 0 0 2px !important;
+  padding: 2px !important;
+  background: #141814 !important;
+  border-bottom: 2px solid #000 !important;
+  box-shadow:
+    inset 0 -1px 0 #3b3b3b,
+    inset 0 1px 0 #2a2a2a !important;
+  font-family: var(--spotamp-mono) !important;
+}
+
+html.spotamp-active .spotamp-tree__title {
+  height: 16px !important;
+  padding: 0 4px !important;
+  margin-bottom: 2px !important;
+  background: #020602 !important;
+  border: 1px solid !important;
+  border-color: #030503 #3b513d #3b513d #030503 !important;
+  color: var(--spotamp-green) !important;
+  font-size: 8px !important;
+  line-height: 14px !important;
+  letter-spacing: 0.1em !important;
+  text-shadow: 0 0 4px rgba(73, 255, 126, 0.45);
+}
+
+html.spotamp-active .spotamp-tree__folder {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 3px !important;
+  border: 1px solid transparent !important;
+  color: #b9c6b9 !important;
+  font-family: var(--spotamp-mono) !important;
+  font-size: 9px !important;
+  line-height: 16px !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+html.spotamp-active .spotamp-tree__folder:hover {
+  background: #203020 !important;
+  color: var(--spotamp-green) !important;
+}
+
+html.spotamp-active .spotamp-tree__folder[data-active="true"] {
+  background: #0a2564 !important;
+  border-color: #4c77c9 !important;
+  box-shadow: inset 0 0 0 1px #2f55a0 !important;
+  color: #fff !important;
+}
+
+html.spotamp-active .spotamp-tree__folder[data-spotamp-folder="playlists"] {
+  margin-top: 1px !important;
+  border-top: 1px dashed #2f3a2f !important;
+  color: #8b9b8b !important;
+}
+
+html.spotamp-active .spotamp-tree__icon {
+  position: relative !important;
+  flex: 0 0 12px !important;
+  width: 12px !important;
+  height: 9px !important;
+  margin: 0 0 0 1px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 #ffe27a !important;
+}
+
+html.spotamp-active .spotamp-tree__icon::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -1px !important;
+  top: -4px !important;
+  width: 6px !important;
+  height: 4px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  border-bottom: 0 !important;
+}
+
+html.spotamp-active .spotamp-tree__folder[data-active="true"] .spotamp-tree__icon {
+  background: #ffe27a !important;
+  box-shadow: inset 1px 1px 0 #fff6c9 !important;
+}
+
+html.spotamp-active .spotamp-tree__folder[data-active="true"] .spotamp-tree__icon::before {
+  background: #ffe27a !important;
+}
+
+/* Playlist rows below the tree are folder contents, not album-card covers. */
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div:has(> img) {
+  position: relative !important;
+  background: transparent !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div:has(> img)::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 3px !important;
+  top: 7px !important;
+  width: 13px !important;
+  height: 9px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 #ffe27a !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div:has(> img)::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 2px !important;
+  top: 3px !important;
+  width: 7px !important;
+  height: 4px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  border-bottom: 0 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] > [role="gridcell"] > div > div:has(> img) img {
+  display: none !important;
+}
+
+/* Active folder must beat the playlists-group muted color. */
+html.spotamp-active .spotamp-tree__folder[data-active="true"][data-spotamp-folder="playlists"] {
+  color: #fff !important;
+  background: #0a2564 !important;
+}
+
+/* The sidebar art cell is nested several wrappers deep; target the element
+   that directly owns the image and replace it with a classic folder. */
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] div:has(> img) {
+  position: relative !important;
+  background: transparent !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] div:has(> img)::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 3px !important;
+  top: 7px !important;
+  width: 13px !important;
+  height: 9px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 #ffe27a !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] div:has(> img)::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 2px !important;
+  top: 3px !important;
+  width: 7px !important;
+  height: 4px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  border-bottom: 0 !important;
+}
+
+html.spotamp-active nav[aria-label="Main"] [data-spotamp-sidebar-row] div:has(> img) img {
+  display: none !important;
+}
+
+html.spotamp-active .spotamp-tree__folder:focus-visible {
+  outline: 1px dotted var(--spotamp-green) !important;
+  outline-offset: -2px !important;
+}
+
+/* --------------------------------------------------------------------------
+   Spotamp shell — the Spotify application chrome is replaced by a Winamp
+   desktop. The live Spotify DOM stays mounted (playback and routing still
+   work) but is never painted.
+   -------------------------------------------------------------------------- */
+
+html.spotamp-shell {
+  background: #080a08 !important;
+  color-scheme: dark !important;
+}
+
+html.spotamp-shell body {
+  min-height: 100vh !important;
+  overflow: hidden !important;
+  background-color: #0b0d0b !important;
+  background-image:
+    radial-gradient(ellipse at 50% 40%, rgba(26, 46, 30, 0.35), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(140, 255, 160, 0.022) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px) !important;
+  color: var(--spotamp-text) !important;
+}
+
+html.spotamp-shell #main,
+html.spotamp-shell [data-testid="root"] {
+  background: transparent !important;
+}
+
+/* Nothing from Spotify's client shell is painted in Spotamp mode. The DOM
+   stays mounted underneath so playback, routing and account state keep
+   working, but the Winamp windows are the only visible interface. */
+html.spotamp-shell #main {
+  display: none !important;
+}
+
+html.spotamp-shell #global-nav-bar,
+html.spotamp-shell #Desktop_LeftSidebar_Id,
+html.spotamp-shell [data-testid="LayoutResizer__resize-bar"],
+html.spotamp-shell main,
+html.spotamp-shell [data-testid="now-playing-bar"],
+html.spotamp-shell aside[aria-label="Now playing view"],
+html.spotamp-shell div:has(> #Desktop_PanelContainer_Id) {
+  display: none !important;
+}
+
+html.spotamp-shell .spotamp-webamp {
+  left: 20px !important;
+  top: 20px !important;
+  bottom: auto !important;
+}
+
+.spotamp-library {
+  position: fixed !important;
+  /* The library follows the scaled deck edge, and its unscaled box is sized
+     so the painted window ends 20px inside the viewport. */
+  left: calc(36px + 567px * var(--spotamp-ui-scale, 1));
+  top: 20px;
+  width: clamp(
+    180px,
+    calc((100vw - 56px) * var(--spotamp-ui-inv-scale, 1) - 567px),
+    430px
+  );
+  height: max(
+    120px,
+    calc(
+      (100vh - var(--spotamp-bar-h, 46px) - 32px) *
+        var(--spotamp-ui-inv-scale, 1) - 20px
+    )
+  );
+  transform: scale(var(--spotamp-ui-scale, 1));
+  transform-origin: top left;
+  image-rendering: pixelated;
+  z-index: 2147481999 !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+}
+
+.spotamp-library[hidden] {
+  display: none !important;
+}
+
+/* Real Winamp generic-window layout (mirrors Webamp's GenWindow component).
+   The graphics come from the bundled base-2.91 skin in winamp-gen.css. */
+#spotamp-library .gen-window {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  image-rendering: pixelated;
+}
+
+#spotamp-library .gen-top {
+  flex: 0 0 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  display: flex !important;
+  position: relative !important;
+  cursor: move !important;
+  user-select: none !important;
+}
+
+#spotamp-library .gen-top-left,
+#spotamp-library .gen-top-left-end,
+#spotamp-library .gen-top-right,
+#spotamp-library .gen-top-right-end {
+  width: 25px !important;
+  min-width: 25px !important;
+  height: 20px !important;
+}
+
+#spotamp-library .gen-top-left-fill,
+#spotamp-library .gen-top-right-fill {
+  flex: 1 1 auto !important;
+  height: 20px !important;
+}
+
+#spotamp-library .gen-top-title {
+  flex: 0 0 auto !important;
+  height: 20px !important;
+  padding: 2px 4px 0 3px !important;
+  margin: 0 !important;
+  line-height: 7px !important;
+  white-space: nowrap !important;
+}
+
+#spotamp-library .gen-top-right {
+  position: relative !important;
+}
+
+#spotamp-library .gen-close {
+  position: absolute !important;
+  top: 3px !important;
+  right: 2px !important;
+  width: 9px !important;
+  height: 9px !important;
+  min-width: 9px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+}
+
+#spotamp-library .gen-text-letter {
+  display: inline-block !important;
+  height: 7px !important;
+  vertical-align: top !important;
+}
+
+#spotamp-library .gen-text-space {
+  width: 5px !important;
+}
+
+#spotamp-library .gen-middle {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  min-height: 0 !important;
+  position: relative !important;
+}
+
+#spotamp-library .gen-middle-left {
+  width: 11px !important;
+  min-width: 11px !important;
+  position: relative !important;
+  background-repeat: repeat-y !important;
+}
+
+#spotamp-library .gen-middle-left-bottom {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 11px !important;
+  height: 24px !important;
+}
+
+#spotamp-library .gen-middle-center {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: #000 !important;
+}
+
+#spotamp-library .gen-middle-right {
+  width: 8px !important;
+  min-width: 8px !important;
+  position: relative !important;
+  background-repeat: repeat-y !important;
+  background-position: top right !important;
+}
+
+#spotamp-library .gen-middle-right-bottom {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 8px !important;
+  height: 24px !important;
+}
+
+#spotamp-library .gen-bottom {
+  flex: 0 0 14px !important;
+  min-height: 14px !important;
+  max-height: 14px !important;
+  height: 14px !important;
+  position: relative !important;
+  background-repeat: repeat-x !important;
+}
+
+#spotamp-library .gen-bottom-left {
+  position: absolute !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 125px !important;
+  height: 14px !important;
+}
+
+#spotamp-library .gen-bottom-right {
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 125px !important;
+  height: 14px !important;
+}
+
+.spotamp-library__content {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  line-height: 1.25 !important;
+}
+
+.spotamp-library__tree {
+  flex: 0 0 auto !important;
+  background: #000 !important;
+}
+
+#spotamp-library .spotamp-tree {
+  margin: 0 !important;
+  border-bottom: 1px solid #00ff00 !important;
+  background: #000 !important;
+}
+
+#spotamp-library .spotamp-tree__title {
+  height: 13px !important;
+  padding: 1px 4px !important;
+  background: #0000c6 !important;
+  color: #ffffff !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: bold !important;
+  line-height: 11px !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#spotamp-library .spotamp-tree__folder {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  padding: 0 4px !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  line-height: 16px !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+#spotamp-library .spotamp-tree__folder:hover,
+#spotamp-library .spotamp-tree__folder:focus-visible {
+  background: #0000c6 !important;
+  color: #ffffff !important;
+  outline: 0 !important;
+}
+
+#spotamp-library .spotamp-tree__folder[data-active="true"] {
+  background: #0000c6 !important;
+  color: #ffffff !important;
+}
+
+#spotamp-library .spotamp-tree__icon {
+  position: relative !important;
+  flex: 0 0 11px !important;
+  width: 11px !important;
+  height: 8px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 #ffe27a !important;
+}
+
+#spotamp-library .spotamp-tree__icon::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -1px !important;
+  top: -3px !important;
+  width: 5px !important;
+  height: 3px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  border-bottom: 0 !important;
+}
+
+#spotamp-library .spotamp-tree__folder[data-active="true"] .spotamp-tree__icon {
+  background: #ffe27a !important;
+}
+
+#spotamp-library .spotamp-tree__label {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.spotamp-library__search {
+  flex: 0 0 23px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 2px 4px !important;
+  margin: 0 !important;
+  background: #000 !important;
+  border-top: 1px solid #0b5b0b !important;
+  border-bottom: 1px solid #0b5b0b !important;
+}
+
+.spotamp-library__search-label {
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  letter-spacing: 0.02em !important;
+}
+
+.spotamp-library__search input {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 17px !important;
+  padding: 0 4px !important;
+  background: #000 !important;
+  border: 1px solid !important;
+  border-color: #0b5b0b #00ff00 #00ff00 #0b5b0b !important;
+  border-radius: 0 !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  outline: none !important;
+}
+
+.spotamp-library__search input::placeholder {
+  color: #0b7a0b !important;
+}
+
+.spotamp-library__go {
+  height: 17px !important;
+  padding: 0 6px !important;
+  border: 1px solid !important;
+  border-color: #8f8f8f #000 #000 #8f8f8f !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #d4d4d4 0%, #9a9a9a 50%, #c4c4c4 100%) !important;
+  color: #000 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+}
+
+.spotamp-library__go:active {
+  border-color: #000 #8f8f8f #8f8f8f #000 !important;
+  background: #8f8f8f !important;
+}
+
+.spotamp-library__body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background: #000 !important;
+  color: #00ff00 !important;
+}
+
+.spotamp-library__section {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 14px !important;
+  padding: 0 4px !important;
+  background: #000 !important;
+  border-top: 1px solid #0b5b0b !important;
+  border-bottom: 1px solid #0b5b0b !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 8px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.spotamp-library__count {
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 8px !important;
+}
+
+.spotamp-library__items {
+  display: block !important;
+}
+
+.spotamp-library__item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+  height: 13px !important;
+  min-height: 13px !important;
+  padding: 0 4px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 9px !important;
+  line-height: 13px !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+
+.spotamp-library__item:hover,
+.spotamp-library__item:focus-visible {
+  background: #0000c6 !important;
+  color: #ffffff !important;
+  outline: 0 !important;
+}
+
+.spotamp-library__icon {
+  position: relative !important;
+  flex: 0 0 11px !important;
+  width: 11px !important;
+  height: 8px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 #ffe27a !important;
+}
+
+.spotamp-library__icon::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -1px !important;
+  top: -3px !important;
+  width: 5px !important;
+  height: 3px !important;
+  background: #c8a12a !important;
+  border: 1px solid #000 !important;
+  border-bottom: 0 !important;
+}
+
+.spotamp-library__item[data-kind="track"] .spotamp-library__icon {
+  flex-basis: 9px !important;
+  width: 7px !important;
+  height: 9px !important;
+  background: #c8c8c8 !important;
+  box-shadow: inset 1px 1px 0 #ffffff !important;
+}
+
+.spotamp-library__item[data-kind="track"] .spotamp-library__icon::before {
+  display: none !important;
+}
+
+.spotamp-library__label {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.spotamp-library__type {
+  flex: 0 0 auto !important;
+  color: #0b7a0b !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 7px !important;
+  letter-spacing: 0.04em !important;
+}
+
+.spotamp-library__item:hover .spotamp-library__type,
+.spotamp-library__item:focus-visible .spotamp-library__type {
+  color: #9fb6ff !important;
+}
+
+.spotamp-library__empty {
+  height: 14px !important;
+  padding: 2px 5px 0 !important;
+  color: #0b7a0b !important;
+  font-size: 9px !important;
+}
+
+.spotamp-library__status {
+  flex: 0 0 13px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 4px !important;
+  background: #000 !important;
+  border-top: 1px solid #0b5b0b !important;
+  color: #00ff00 !important;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-size: 8px !important;
+  letter-spacing: 0.06em !important;
+}
+
+@media (max-width: 760px) {
+  .spotamp-library {
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: calc(var(--spotamp-bar-h, 58px) + 8px) !important;
+    width: auto !important;
+    height: 280px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Winamp UI scale (50%–200%)
+   A single CSS variable drives every Spotamp window. Webamp's own double-size
+   only covers the main and equalizer windows, so the whole deck, the library
+   and the status strip are scaled together with pixel-crisp rendering.
+   -------------------------------------------------------------------------- */
+
+html.spotamp-active .spotamp-status__double[data-state="on"] {
+  color: #46ff73 !important;
+  border-color: #050505 #1f6b32 #1f6b32 #050505 !important;
+  background: linear-gradient(180deg, #244a2e, #102015) !important;
+  box-shadow: inset 0 0 0 1px #0b351b !important;
+}

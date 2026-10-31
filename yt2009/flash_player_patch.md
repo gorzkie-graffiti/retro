@@ -1,0 +1,1 @@
+moved to `flash_player_setup.md`

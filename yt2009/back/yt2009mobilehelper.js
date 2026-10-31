@@ -1,0 +1,5000 @@
+const fs = require("fs")
+const https = require("https")
+const config = require("./config.json")
+const templates = require("./yt2009templates")
+const fetch = require("node-fetch")
+const userdata_fname = "./mobilehelper_userdata.json"
+const utils = require("./yt2009utils")
+const create_comment_pb = require("./proto/create_comment_pb")
+const mobileflags = require("./yt2009mobileflags")
+const watchNext = require("./proto/watchNextFeed_pb")
+const protobufNextReq = require("./proto/android_next_pb")
+const protoAnalytics = require("./proto/analytics_screen_request_pb")
+const metadataUpdate = require("./proto/android_metadata_update_pb")
+const userMetadata = require("./proto/android_user_metadata_pb")
+const customChannel = require("./proto/yt2009_channel_pb")
+const customizableRequest = require("./proto/bare_android_request_pb")
+const browseNavigation = require("./proto/browse_navigation_pb")
+const creatorRequestSpecifics = require("./proto/creator_request_pb")
+const commentActions = require("./proto/comment_action_pb")
+const yt2009pot = require("./yt2009pot")
+const playerRequestProto = require("./proto/android_player_request_pb")
+const yt2009exports = require("./yt2009exports")
+let yt2009sabr;
+setTimeout(() => {
+    yt2009sabr = yt2009exports.read().sabrMirror
+}, 100)
+const androidHeaders = {
+    "Accept": "*/*",
+    "Accept-Language": "en-US;q=0.7,en;q=0.3",
+    "Content-Type": "application/json",
+    "x-goog-authuser": "0",
+    "x-origin": "https://www.youtube.com/",
+    "user-agent": "com.google.android.youtube/21.16.256 (Linux; U; Android 14) gzip"
+}
+const upUA = [
+    "com.google.android.youtube/1552803264",
+    "(Linux; U; Android 10; en_US; Android SDK built for x86;",
+    "Build/QSR1.190920.001; Cronet/133.0.6876.3)"
+].join(" ")
+const upInitial = JSON.stringify({
+    "deviceDisplayName":"GOOGLE Android SDK built for x86",
+    "fileId":"goog-edited-video:\\/\\/generated?videoFileUri=content%3A%2F%2Fmedia%2Fexternal%2Fvideo%2Fmedia%2F29",
+    "mp4MoovAtomRelocationStatus":"UNNECESSARY",
+    "transcodeResult":"DISABLED",
+    "connectionType":"WIFI"
+})
+const androidContext = {
+    "client": {
+        "hl": "en",
+        "clientName": "ANDROID",
+        "clientVersion": "21.16",
+        "deviceMake": "Google",
+        "deviceModel": "Android SDK built for x86",
+        "deviceCodename": "ranchu;",
+        "osName": "Android",
+        "osVersion": "10",
+        "gl": "US",
+        "timeZone": "Europe/Warsaw",
+        "screenDensityFloat": 1,
+        "screenHeightPoints": 2160,
+        "screenPixelDensity": 1,
+        "screenWidthPoints": 3840,
+        "utcOffsetMinutes": 60
+    }
+}
+const genericDefault = fs.readFileSync(
+    "../mobile/mobilehelper/generic_default.xml"
+).toString().split("{url}").join(`${config.ip}:${config.port}`)
+const uida = "1234567890abcde".split("")
+let genericDg = fs.readFileSync("../mobile/mobilehelper/generic_dg.txt").toString()
+let userdata = {"ikmc": 1,"ikmc2":1}
+let initedSessions = []
+let pchelperWlCaching = {}
+let datasyncIdCaching = {}
+if(fs.existsSync(userdata_fname)) {
+    try {
+        userdata = JSON.parse(fs.readFileSync(userdata_fname).toString())
+    }
+    catch(error){}
+} else {
+    fs.writeFileSync(userdata_fname, "{\"ikmc\":1}")
+}
+const hostname = config.alt_hostname
+               ? `https://youtubei.googleapis.com`
+               : `https://www.youtube.com`
+
+// sabr
+function handleSabr(videoId, req) {
+    let flags = mobileflags.get_flags(req)
+    let urlFlags = mobileflags.url_flags(req)
+    if(flags.watch.includes("sabr")
+    || urlFlags.list.includes("sabr")
+    || (req && req.headers && req.headers.overrideAddSabr)) {
+        let qualities = ["720p", "480p", "360p", "240p", "144p"]
+        if(flags.watch.includes("sabr-nonhd")
+        || urlFlags.list.includes("sabr-nonhd")) {
+            qualities = ["480p", "360p", "240p", "144p"]
+        }
+        let sabrUrl = yt2009sabr.initPlaybackSession(
+            videoId, qualities
+        )
+        return {
+            "sabrUrl": sabrUrl,
+            "sabrUsesModdedApp": flags.watch.includes(
+                "sabr-uses-modded-app"
+            ) || urlFlags.list.includes("sabr-uses-modded-app"),
+            "sabrOverriden": (req && req.headers && req.headers.overrideAddSabr)
+        }
+    }
+    return {"sabrUrl": false}
+}
+function craftAdditional(defaultData, videoId, req) {
+    if(!defaultData) {
+        defaultData = {}
+    }
+    let fullData = JSON.parse(JSON.stringify(defaultData))
+    let sabr = handleSabr(videoId, req)
+    for(let property in sabr) {
+        fullData[property] = sabr[property]
+    }
+    return fullData;
+}
+
+module.exports = {
+    "set": function(app) {
+        app.get("/gsign", (req, res) => {
+            if(req.headers["user-agent"]
+            && (req.headers["user-agent"].toLowerCase().includes("android")
+            || req.headers["user-agent"].toLowerCase().includes("ios")
+            || req.headers["user-agent"].toLowerCase().includes("iphone")
+            || req.headers["user-agent"].toLowerCase().includes("ipad"))) {
+                if(req.query.device && req.query.device.length <= 7) {
+                    if(!initedSessions.includes(req.query.device)) {
+                        initedSessions.push(req.query.device)
+                        setTimeout(() => {
+                            initedSessions = initedSessions.filter(
+                                s => s !== req.query.device
+                            )
+                        }, 3600000)
+                    }
+                    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>*{font-family: sans-serif;}body{text-align:center;}.g{color:#666;}</style>
+</head>
+<body>
+    <h1>visit this website on a PC!</h1>
+    <h2 class="g">http://${config.ip}:${config.port}/gsign</h2>
+    <h1>device code:</h1>
+    <h1 class="g">${req.query.device}</h1>
+</body>
+</html>`)
+                } else {
+                    res.sendStatus(400);
+                }
+                return;
+            }
+
+
+            let code = fs.readFileSync(
+                "../mobile/mobilehelper/pc_connect.html"
+            ).toString()
+            res.send(code)
+        })
+
+        app.get("/gsign_inited", (req, res) => {
+            if(!req.headers.device) {
+                res.sendStatus(400)
+                return;
+            }
+
+            if(req.headers.device
+            && initedSessions.includes(req.headers.device)) {
+                res.send("1")
+            } else if(req.headers.device
+            && userdata[req.headers.device]){
+                res.send("2")
+            } else {
+                res.send("0")
+            }
+        })
+
+        app.post("/gsign_submit", (req, res) => {
+            let body = ""
+            if(!req.headers.device
+            || req.headers.device.length > 7) {
+                res.sendStatus(400);
+                return;
+            }
+            let device = req.headers.device
+            if(!req.body
+            || !req.body.toString().includes("\x00")
+            || !req.body.toString().includes("\x01")) {
+                res.sendStatus(400);
+                return;
+            }
+
+            body = req.body.toString();
+            let email = body.split("\x00")[0]
+            let token = body.split("\x00")[1].split("\x01").join("")
+            token = token.split("").reverse().join("")
+
+            pullFirstGoogleAuth(email, token, (data) => {
+                if(!data) {
+                    res.status(500)
+                    res.send("1")
+                    return;
+                }
+
+                device = gmcu(device)
+
+                userdata[device] = {
+                    "email": encryptWithIk(email)
+                }
+
+                for(let entry in data) {
+                    userdata[device][entry] = data[entry]
+                }
+
+                pullYouTubeAuth(userdata[device], (data) => {
+                    if(!data) {
+                        res.status(500)
+                        res.send("2")
+                        return;
+                    }
+
+                    for(let entry in data) {
+                        userdata[device][entry] = data[entry]
+                    }
+
+                    initedSessions = initedSessions.filter(
+                        s => s !== device
+                    )
+
+                    pullYouTubeAccounts(userdata[device], (data) => {
+                        for(let entry in data) {
+                            userdata[device][entry] = data[entry]
+                        }
+                        userdata[device].isFirst = true;
+                        fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+                        res.sendStatus(200)
+                    })
+                })
+            })
+        })
+
+        app.get("/gsign_get_devices", (req, res) => {
+            if(!req.headers.device
+            && req.headers.cookie
+            && req.headers.cookie.includes("pchelper_user=")) {
+                // ie fallback
+                req.headers.device = req.headers.cookie
+                                     .split("pchelper_user=")[1]
+                                     .split(";")[0].trim()
+                req.headers.mode = "pchelper"
+            }
+
+            if(!req.headers.device
+            || req.headers.device.length > 7) {
+                res.sendStatus(400);
+                return;
+            }
+
+            let device = gmcu(req.headers.device)
+            if(!userdata[device]) {
+                res.sendStatus(400);
+                return;
+            }
+
+            let dataSent = false;
+            refreshTube(device, () => {
+                pullAllYouTubeAccounts(userdata[device], (data) => {
+                    if(req.headers.mode == "pchelper") {
+                        let t = templates.pchelper_accounts(data)
+                        if(userdata[device].savedFlags) {
+                            res.set("x-yt2009-has-saved-flags", true)
+                        }
+                        dataSent = true;
+                        res.send(t)
+                        return;
+                    }
+                    dataSent = true;
+                    res.send(data)
+                })
+            })
+            
+            setTimeout(() => {
+                if(!dataSent && req.headers.mode == "pchelper") {
+                    const joinedMsg = [
+                        "timed out waiting for your accounts.",
+                        "make sure you have at least 1 youtube channel",
+                        "added to this account. if so,",
+                        "try refreshing this page. if it doesn't work,",
+                        "try removing your pchelper_user cookie",
+                        "and readding your account."
+                    ].join(" ")
+                    try {res.send(joinedMsg)}catch(error) {}
+                }
+            }, 5000)
+        })
+
+        app.post("/gsign_set", (req, res) => {
+            if(!req.headers.device
+            && req.query.device) {
+                req.headers.device = req.query.device;
+            }
+            if(!req.headers.uid
+            && req.query.uid) {
+                req.headers.uid = req.query.uid
+            }
+            if(!req.headers.username
+            && req.query.username) {
+                req.headers.username = decodeURIComponent(req.query.username)
+            }
+            if(!req.headers.first
+            && req.query.first) {
+                req.headers.first = true
+            }
+
+            if(!req.headers.device
+            || req.headers.device.length > 7
+            || !req.headers.uid
+            || !req.headers.username) {
+                res.sendStatus(400);
+                return;
+            }
+    
+            let device = gmcu(req.headers.device)
+            if(!userdata[device]) {
+                res.sendStatus(400);
+                return;
+            }
+
+            userdata[device].pageId = req.headers.uid;
+            userdata[device].cachedName = req.headers.username
+            if(userdata[device].userId) {
+                userdata[device].userId = null;
+                delete userdata[device].userId
+            }
+            if(req.headers.first) {
+                userdata[device].isFirst = true;
+            } else {
+                userdata[device].isFirst = false;
+            }
+            if(datasyncIdCaching[device]) {
+                datasyncIdCaching[device] = null;
+                delete datasyncIdCaching[device];
+            }
+            fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+
+            res.send("")
+        })
+
+        app.post("/create_pchelper", (req, res) => {
+            let devId = ""
+            function createDevId() {
+                devId = ""
+                while(devId.length !== 7) {
+                    devId += uida[Math.floor(Math.random() * uida.length)]
+                }
+            }
+            createDevId()
+            while(initedSessions.includes(devId)
+            || this.hasLogin(devId)) {
+                createDevId()
+            }
+
+            res.send([
+                "ok=true",
+                "pchelper_user=" + devId,
+                "instance=" + config.ip
+            ].join("&"))
+        })
+
+        app.get("/pull_pchelper", (req, res) => {
+            if(pullDeviceId(req) && this.hasLogin(req)) {
+                res.sendStatus(200)
+                return;
+            }
+            res.sendStatus(401);
+        })
+
+        app.post("/save_pchelper_flags", (req, res) => {
+            let flags = req.body.toString()
+            flags = flags.substring(0,(4096*5))
+            let device = pullDeviceId(req)
+            if(!userdata[device]) {
+                res.sendStatus(401);
+                return;
+            }
+            userdata[device].savedFlags = flags;
+            fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+            res.sendStatus(200)
+        })
+
+        app.get("/get_pchelper_flags", (req, res) => {
+            let device = pullDeviceId(req)
+            if(!userdata[device]) {
+                res.sendStatus(401);
+                return;
+            }
+            res.send(userdata[device].savedFlags || "")
+        })
+
+        const linkMessages = {
+            "nodata": "no user info! return to the previous page",
+            "success": "pchelper linked! manage through /mh_pc_manage",
+            "nohelper": "this pchelper id doesn't appear to exist."
+        }
+
+        app.post("/pchelper_linked_alias_mobilehelper", (req, res) => {
+            let targetDevice = ""
+            let sourceDevice = ""
+            try {
+                let body = req.body.slice(0,2048).toString()
+                targetDevice = decodeURIComponent(
+                    body.split("pchelper_user=")[1].split("&")[0]
+                )
+                sourceDevice = decodeURIComponent(
+                    body.split("gdata_device=")[1].split("&")[0]
+                )
+            }
+            catch(error){}
+            if(!targetDevice || !sourceDevice) {
+                res.status(400).send(linkMessages.nodata)
+                return;
+            }
+            let aliasedDevice = gmcu(targetDevice)
+            if(userdata[aliasedDevice]) {
+                // existent device
+                sourceDevice = gmcu(sourceDevice)
+                userdata[sourceDevice] = {"alias": aliasedDevice}
+                fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+                res.status(200).send(linkMessages.success)
+            } else {
+                res.status(400).send(linkMessages.nohelper)
+            }
+        })
+
+        app.get("/pchelper_get_clear_history_token", (req, res) => {
+            this.getWatchHistoryClearToken(req, (token) => {
+                if(!token) {
+                    res.sendStatus(500)
+                    return;
+                }
+                res.send(token)
+            })
+        })
+
+        app.post("/pchelper_history_remove", (req, res) => {
+            this.removeFromHistory(req, res)
+        })
+    },
+
+    "handle_recommendations": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        if(deviceId && !userdata[deviceId]) {
+            let device = deviceId;
+            if(device.startsWith("u2-")) {
+                device = decryptWthIk(deviceId.split("u2-")[1])
+            }
+            let r = templates.gdata_feedStart;
+            let urlFlags = mobileflags.url_flags(req)
+            
+            r += templates.gdata_feedVideo(
+                "12345678911",
+                "open this video to complete your yt2009 sign in",
+                "completesignin", "1", "1",
+                `open the link below for more information on completing sign in to your google account on a yt2009 app.
+you will need a PC with a modern browser for this.
+
+[!] only do this for instances you trust.
+
+currently used instance: ${config.ip}
+
+complete sign in:
+http://${config.ip}:${config.port}/gsign?device=${device}`,
+                "1900-01-01", "-", "-", "", "",
+                craftAdditional({"urlFlags": urlFlags}, "W9nZ6u15yis", req)
+            )
+
+            r += templates.gdata_feedEnd;
+
+            res.set("content-type", "application/xml")
+            res.send(r)
+        } else if(deviceId && userdata[deviceId]) {
+            let rt = templates.gdata_feedStart;
+            setupYouTube(deviceId, (h) => {
+                fetch(hostname + "/youtubei/v1/browse", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "browseId": "FEwhat_to_watch"
+                    })
+                }).then(r => {r.json().then(r => {
+                    let vl = []
+                    let targetVids = 25
+                    if(req.targetVids) {
+                        targetVids = req.targetVids;
+                    }
+                    let addedIds = []
+                    try {
+                        r = r.contents.singleColumnBrowseResultsRenderer.tabs[0]
+                             .tabRenderer.content.sectionListRenderer.contents;
+                    }
+                    catch(error) {
+                        res.send(templates.gdata_emptyfeed);
+                    }
+                    r.forEach(s => {
+                        try {
+                            if(!s.shelfRenderer) return;
+                            s = s.shelfRenderer.content.horizontalListRenderer
+                                 .items;
+                            s.forEach(i => {
+                                if(i.gridVideoRenderer
+                                && !addedIds.includes(i.gridVideoRenderer.videoId)) {
+                                    vl.push(i.gridVideoRenderer)
+                                    addedIds.push(i.gridVideoRenderer.videoId)
+                                }
+                            })
+                        }
+                        catch(error){console.log(error)}
+                    })
+
+                    let videoList = vl.slice(0, targetVids)
+
+                    let flags = mobileflags.get_flags(req).watch
+                    let urlFlags = mobileflags.url_flags(req)
+                    let isV4 = ((flags.watch && flags.watch.includes("v4-fix-channels"))
+                             || urlFlags.list.includes("v4-fix-channels"))
+
+                    function applyData() {
+                        videoList.forEach(v => {
+                            if(!v.shortBylineText || !v.lengthText
+                            || !v.viewCountText) return;
+                            let a = v.shortBylineText.runs[0]
+                            let handle = false;
+                            let authorId = false;
+                            let authorFull = false;
+
+                            try {
+                                let c = a.navigationEndpoint.browseEndpoint
+                                        .canonicalBaseUrl;
+                                authorId = a.navigationEndpoint.browseEndpoint
+                                            .browseId;
+                                authorFull = a.text;
+                                if(c.startsWith("/@")) {
+                                    handle = c.split("/@")[1];
+                                }
+                            }
+                            catch(error){}
+
+                            if(handle) {
+                                a = handle;
+                            } else {
+                                a = utils.asciify(a.text)
+                            }
+
+                            try {
+                                let title = v.originalTitle
+                                         || v.title.runs[0].text
+                                rt += templates.gdata_feedVideo(
+                                    v.videoId, title, a,
+                                    utils.bareCount(v.viewCountText.runs[0].text),
+                                    utils.time_to_seconds(
+                                        v.lengthText.runs[0].text
+                                    ),
+                                    (v.description || "-"),
+                                    (v.publishedAt || utils.relativeToAbsoluteApprox(
+                                        v.publishedTimeText.runs[0].text
+                                    )), ((v.tags && v.tags.join(", ")) || "-"),
+                                    "-", flags, null, craftAdditional({
+                                        "authorId": authorId,
+                                        "authorFull": authorFull,
+                                        "isV4": isV4,
+                                        "isMobilehelper": true,
+                                        "urlFlags": urlFlags,
+                                        "isPchelper": req.isPchelper
+                                    }, v.videoId, req)
+                                )
+                                //console.log("successfully added video " + v.videoId)
+                            }
+                            catch(error){console.log(error)}
+                        })
+
+                        rt += templates.gdata_feedEnd;
+                        res.set("content-type", "application/xml")
+                        res.send(rt)
+                    }
+
+                    if(config.data_api_key) {
+                        function applyOriginalData(apid) {
+                            for(let id in apid) {
+                                let videoData = apid[id]
+                                let rel = videoList.filter(s => {
+                                    return s.videoId == id
+                                })[0]
+                                let i = videoList.indexOf(rel)
+                                if(i !== null && i !== undefined && i >= 0) {
+                                    videoList[i].originalTitle = videoData.title
+                                    videoList[i].dataApi = true;
+                                    videoList[i].publishedAt = videoData.publishedAt;
+                                    videoList[i].description = videoData.description;
+                                    videoList[i].tags = videoData.tags
+                                }
+                            }
+                        }
+
+                        let videoIds = []
+                        let requestedParts = [
+                            "title", "publishedAt", "description", "tags"
+                        ]
+
+                        let fetchesRequired = 1;
+                        let fetchesDone = 0;
+
+                        videoList.forEach(v => {videoIds.push(v.videoId)})
+                        
+                        if(videoIds.length > 50) {
+                            let vl2 = videoIds.slice(50)
+                            fetchesRequired = 2;
+                            videoIds = videoIds.slice(0,50);
+                            utils.dataApiBulk(vl2, requestedParts, (apid) => {
+                                applyOriginalData(apid)
+                                fetchesDone++
+                                if(fetchesDone >= fetchesRequired) {
+                                    applyData()
+                                }
+                            })
+                        }
+
+                        utils.dataApiBulk(videoIds, requestedParts, (apid) => {
+                            applyOriginalData(apid)
+                            fetchesDone++
+                            if(fetchesDone >= fetchesRequired) {
+                                applyData()
+                            }
+                        })
+                    } else {
+                        applyData()
+                    }
+                })})
+            })
+        } else {
+            res.redirect("/feeds/api/standardfeeds/recently_featured")
+        }
+    },
+
+
+    "userData": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        res.set("content-type", "application/xml")
+        if(!deviceId) {
+            res.send(genericDefault)
+            return;
+        }
+
+        pullUserIdFromDevice(deviceId, (id) => {
+            if(id.type && id.type == "b") {
+                let avatar = `http://${config.ip}:${config.port}/${utils.saveAvatar(id.avatar)}`
+                res.send(templates.gdata_user(
+                    "default", id.username, avatar, 0, 0, 0, 0,
+                    mobileflags.get_flags(req).channel
+                ))
+                return;
+            }
+            res.redirect("/feeds/api/users/" + id)
+        })
+    },
+
+    "getSubscriptions": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        if(!deviceId) {res.sendStatus(400);return;}
+        res.set("content-type", "application/xml")
+        if(req.headers["user-agent"]
+        && (req.headers["user-agent"].includes("/4.1.")
+        || req.headers["user-agent"].includes("/4.2."))) {
+            res.send(templates.gdata_emptyfeed)
+            return;
+        }
+        let fullRes = templates.gdata_feedStart
+        setupYouTube(deviceId, (h) => {
+            fetch(hostname + "/youtubei/v1/browse", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEchannels"
+                })
+            }).then(r => {r.json().then(r => {
+                //fs.writeFileSync("./test.json", JSON.stringify(r))
+                try {
+					r = r.contents.singleColumnBrowseResultsRenderer
+						 .tabs[0].tabRenderer.content.sectionListRenderer
+						 .contents[0];
+				}
+				catch(error) {
+					r = false
+				}
+                if(r
+                && r.itemSectionRenderer
+                && r.itemSectionRenderer.contents) {
+                    r = r.itemSectionRenderer.contents
+                } else if(r && r.shelfRenderer) {
+                    r = r.shelfRenderer.content.verticalListRenderer.items
+                }
+                if(!r) {
+                    res.send(templates.gdata_emptyfeed)
+                    return;
+                }
+                if(req.originalUrl && req.originalUrl.includes("/feeds/")) {
+                    r = r.slice(0, 25)
+                }
+                r.forEach(v => {
+                    if(!v.elementRenderer) return;
+                    try {
+                        v = v.elementRenderer.newElement.type.componentType
+                             .model.subscriptionsChannelPageListItemModel
+                             .channelListItemData
+
+                        if(!v) return;
+                        let name = v.channelName.content;
+                        let avatar = "/assets/site-assets/default.png"
+                        try {
+                            avatar = utils.saveAvatar(
+                                v.avatar.avatar.image.sources[0].url
+                            )
+                        }
+                        catch(error){}
+                        let id = false;
+                        let handle = false;
+                        try {
+                            function put(browseEndpoint) {
+                                if(browseEndpoint) {
+                                    c = browseEndpoint
+                                    id = c.browseId;
+                                    if(c.canonicalBaseUrl
+                                    && c.canonicalBaseUrl.includes("/@")) {
+                                        handle = c.canonicalBaseUrl.split("/@")[1]
+                                    }
+                                    handle = decodeURIComponent(handle)
+                                }
+                            }
+                            let command = v.command.innertubeCommand
+                            if(command.commandExecutorCommand) {
+                                command.commandExecutorCommand
+                                .commands.forEach(c => {
+                                    if(c.browseEndpoint) {put(c.browseEndpoint)}
+                                })
+                            } else if(command.browseEndpoint) {
+                                put(command.browseEndpoint)
+                            }
+                            
+                        }
+                        catch(error){}
+                        if(!id) return;
+                        fullRes += templates.gdata_subscriptionChannel(
+                            name, (req.withAvatars ? avatar : ""), id, handle
+                        )
+                    }
+                    catch(error){console.log(error)}
+                })
+                fullRes += templates.gdata_feedEnd;
+                res.send(fullRes)
+            })})
+        })
+    },
+
+
+    "getPlaylists": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        if(!deviceId) {res.sendStatus(400);return;}
+        res.set("content-type", "application/xml")
+        let fullRes = templates.gdata_feedStart
+        let f = []
+        setupYouTube(deviceId, (h) => {
+            fetch(hostname + "/youtubei/v1/browse", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEplaylist_aggregation"
+                })
+            }).then(r => {r.json().then(r => {
+                r = r.contents.singleColumnBrowseResultsRenderer.tabs[0]
+                     .tabRenderer.content.sectionListRenderer.contents
+                r.forEach(s => {
+                    try {
+                        s = s.itemSectionRenderer.contents[0].elementRenderer
+                             .newElement.type.componentType.model
+                             .compactPlaylistModel.compactPlaylistData;
+                        if(s && s.thumbnail && s.thumbnail.isMix) return;
+                        let name = s.metadata.title;
+                        let id = s.dragAndDropUrl.split("list=")[1].split("&")[0]
+                        if(req.fake) {
+                            f.push([id, name])
+                        }
+                        if(!req.unfiltered &&
+                        (name == "Liked videos" || name == "Favorites"
+                        || name == "Watch later")) return;
+                        let v = s.thumbnail.videoCount;
+                        fullRes += templates.gdata_playlistEntry(
+                            "you",
+                            id,
+                            name,
+                            v || 1,
+                            ""
+                        )
+                    }
+                    catch(error){}
+                })
+
+                fullRes += templates.gdata_feedEnd;
+                res.send(req.fake ? f : fullRes)
+            })})
+        })
+    },
+
+
+    "getUploads": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        res.set("content-type", "application/xml")
+        if(!deviceId) {
+            res.send(genericDefault)
+            return;
+        }
+
+        pullUserIdFromDevice(deviceId, (id) => {
+            if(id.type && id.type == "b") {
+                res.send(templates.gdata_emptyfeed)
+                return;
+            }
+            res.redirect("/feeds/api/users/" + id + "/uploads")
+        })
+    },
+
+    "personalizedRelated": function(req, res) {
+        let device = pullDeviceId(req)
+        let videoId = req.originalUrl.split("videos/")[1].split("/related")[0]
+        res.set("content-type", "application/xml")
+        let flags = mobileflags.get_flags(req).watch
+        let urlFlags = mobileflags.url_flags(req)
+        let isV4 = ((flags.watch && flags.watch.includes("v4-fix-channels"))
+                 || urlFlags.list.includes("v4-fix-channels"))
+        let fullRes = templates.gdata_feedStart
+        setupYouTube(device, (h) => {
+
+            let watchNextMsg = new watchNext.root()
+            let watchNextContainer = new watchNext.root.container()
+            watchNextContainer.setVideo(videoId)
+            watchNextContainer.setZeroint(3)
+            watchNextContainer.setThreeint(2)
+            watchNextMsg.addC(watchNextContainer)
+            watchNextMsg.setWatchnextfeed("watch-next-feed")
+            let token = encodeURIComponent(Buffer.from(
+                watchNextMsg.serializeBinary()
+            ).toString("base64"))
+
+            fetch(hostname + "/youtubei/v1/next", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "continuation": token
+                })
+            }).then(r => {r.json().then(r => {
+                if(!r.continuationContents) {
+                    res.send(templates.gdata_emptyfeed)
+                    return;
+                }
+                let videos = []
+                r = r.continuationContents.sectionListContinuation.contents[0]
+                     .itemSectionRenderer.contents;
+                r.forEach(s => {
+                    try {
+                        s = s.elementRenderer.newElement.type.componentType
+                             .model.videoWithContextModel.videoWithContextData
+                             .videoData
+                        videos.push(parseViewmodelVideo(s))
+                    }
+                    catch(error){}
+                })
+
+                let fetchesRequired = 0;
+                let fetchesCompleted = 0;
+
+                if(config.data_api_key) {
+                    fetchesRequired++
+
+                    let videoIds = []
+                    let requestedParts = [
+                        "viewCount", "publishedAt", "title", "description"
+                    ]
+
+                    videos.forEach(v => {
+                        if(v && v.id) {
+                            videoIds.push(v.id)
+                        }
+                    })
+
+                    utils.dataApiBulk(videoIds, requestedParts, (apid) => {
+                        for(let id in apid) {
+                            let videoData = apid[id]
+                            let rel = videos.filter(s => {
+                                return s && s.id == id
+                            })[0]
+                            let i = videos.indexOf(rel)
+                            if(i !== null && i !== undefined && i >= 0) {
+                                videos[i].upload = videoData.publishedAt
+                                videos[i].views = videoData.viewCount
+                                videos[i].title = videoData.title
+                                videos[i].description = videoData.description
+                                videos[i].dataApi = true;
+                            }
+                        }
+                        fetchesCompleted++
+                        if(fetchesCompleted >= fetchesRequired) {
+                            applyResponse()
+                        }
+                    })
+                }
+
+                function applyResponse() {
+                    videos.forEach(v => {
+                        if(!v || !v.id) return;
+                        let author = v.authorHandle
+                                  || (
+                                    v.authorFull
+                                    && utils.asciify(v.authorFull)
+                                  )
+                                  || v.authorId
+                                  || ""
+                        fullRes += templates.gdata_feedVideo(
+                            v.id, v.title, author, v.views, v.length,
+                            (v.description || "-"), v.upload, "-", "-",
+                            flags, null, craftAdditional({
+                                "authorFull": v.authorFull,
+                                "authorId": v.authorId,
+                                "isV4": isV4,
+                                "isMobilehelper": true,
+                                "isPchelper": req.isPchelper
+                            }, v.id, req)
+                        )
+                    })
+                    fullRes += templates.gdata_feedEnd;
+                    res.send(fullRes)
+                }
+                if(fetchesCompleted >= fetchesRequired) {
+                    applyResponse()
+                }
+            })})
+        })
+    },
+
+    "addToPlaylist": function(req, res) {
+        let device = pullDeviceId(req)
+        pchelperWlCaching[device] = null;
+        res.set("content-type", "application/xml")
+        let playlist = req.originalUrl.split("/playlists/")[1].split("?")[0]
+        let v = req.body.toString().split("<id>")[1].split("</id>")[0]
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse/edit_playlist", {
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "playlistId": playlist,
+                    "actions": [{
+                        "action": "ACTION_ADD_VIDEO",
+                        "addedVideoId": v
+                    }]
+                }),
+                "method": "POST"
+            }).then(r => {
+                res.sendStatus(200);
+            })
+        })
+        //POST http://192.168.1.7/feeds/api/users/default/favorites
+        //POST http://192.168.1.7/feeds/api/users/default/watch_later
+        //POST http://192.168.1.7/feeds/api/users/default/playlists create pl <yt:private/>
+    },
+
+    "removeFromPlaylist": function(req, res) {
+        let device = pullDeviceId(req)
+        pchelperWlCaching[device] = null;
+        res.set("content-type", "application/xml")
+        let playlist = req.originalUrl.split("/playlists/")[1].split("?")[0]
+        let v = req.body.toString().split("<id>")[1].split("</id>")[0]
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse/edit_playlist", {
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "playlistId": playlist,
+                    "actions": [{
+                        "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID",
+                        "removedVideoId": v
+                    }]
+                }),
+                "method": "POST"
+            }).then(r => {
+                res.sendStatus(200);
+            })
+        })
+    },
+
+    "addToFavorites": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!device || !userdata[device]) {res.sendStatus(400);return;}
+        res.set("content-type", "application/xml")
+        let v = req.body.toString().split("<id>")[1].split("</id>")[0]
+        req.fake = true;
+        this.getPlaylists(req, {"send": (p) => {
+            let favesId = false;
+            p.forEach(playlist => {
+                if(playlist[1] == "Favorites") {
+                    favesId = playlist[0]
+                }
+            })
+
+            // if there is a favorites playlist, add into it,
+            // otherwise create one
+            if(favesId) {
+                checkAlreadyAdded(favesId)
+            } else {
+                createPl()
+            }
+        }, "set": function(s1, s2){}})
+
+        function createPl() {
+            setupYouTube(device, (h) => {
+                fetch(hostname + "/youtubei/v1/playlist/create", {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "privacyStatus": "PUBLIC",
+                        "title": "Favorites",
+                        "videoIds": [v]
+                    })
+                }).then(r => {
+                    res.redirect("/feeds/api/videos/" + v)
+                })
+            })
+        }
+
+        let pullPlaylistAsUser = this.pullPlaylistAsUser;
+        function checkAlreadyAdded(playlistId) {
+            // check if video isn't already added to favorites
+            let fReq = {
+                "playlistId": playlistId,
+                "originalUrl": "/playlists/" + playlistId,
+                "headers": req.headers
+            }
+            let fRes = {
+                "set": function(name,value){},
+                "send": function(data) {
+                    data = data.split("<entry>")
+                    let vs = []
+                    data.forEach(v => {
+                        if(v.includes("<feed")) return;
+                        let id = v.split(`<yt:videoid id='`)[1].split("'")[0]
+                        vs.push(id)
+                    })
+
+                    if(!vs.includes(v)) {
+                        // not in favorites
+                        addToPl(playlistId)
+                    } else {
+                        // already in favorites
+                        res.sendStatus(400)
+                    }
+                }
+            }
+            pullPlaylistAsUser(fReq, fRes)
+        }
+
+        function addToPl(playlistId) {
+            setupYouTube(device, (h) => {
+                fetch(hostname + "/youtubei/v1/browse/edit_playlist", {
+                    "headers": h,
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "playlistId": playlistId,
+                        "actions": [{
+                            "action": "ACTION_ADD_VIDEO",
+                            "addedVideoId": v
+                        }]
+                    }),
+                    "method": "POST"
+                }).then(r => {
+                    res.redirect("/feeds/api/videos/" + v)
+                })
+            })
+        }
+    },
+
+    "removeFromFavorites": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!device || !userdata[device]) {res.sendStatus(400);return;}
+        res.set("content-type", "application/xml")
+        let v = req.body.toString().split("<id>")[1].split("</id>")[0]
+        req.fake = true;
+        this.getPlaylists(req, {"send": (p) => {
+            let favesId = false;
+            p.forEach(playlist => {
+                if(playlist[1] == "Favorites") {
+                    favesId = playlist[0]
+                }
+            })
+
+            // if there is a favorites playlist, add into it,
+            // otherwise create one
+            if(favesId) {
+                rmPl(favesId)
+            } else {
+                // removing from nonexistent playlist?
+                res.sendStatus(400)
+            }
+        }, "set": function(s1, s2){}})
+
+        let removeFromPlaylist = this.removeFromPlaylist;
+        function rmPl(playlistId) {
+            let fReq = {
+                "headers": req.headers,
+                "originalUrl": "/playlists/" + playlistId,
+                "body": req.body.toString()
+            }
+            let fRes = {
+                "set": function(a1, a2) {},
+                "sendStatus": function(status) {
+                    res.sendStatus(status)
+                }
+            }
+            
+            removeFromPlaylist(fReq, fRes)
+        }
+    },
+
+    "addToWatchLater": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!device || !userdata[device]) {res.sendStatus(400);return;}
+        res.set("content-type", "application/xml")
+        let v = req.body.toString().split("<id>")[1].split("</id>")[0]
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse/edit_playlist", {
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "playlistId": "WL",
+                    "actions": [{
+                        "action": "ACTION_ADD_VIDEO",
+                        "addedVideoId": v
+                    }]
+                }),
+                "method": "POST"
+            }).then(r => {
+                res.sendStatus(200)
+            })
+        })
+    },
+
+    "addComment": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        if(!userdata[deviceId]) return;
+        let id = req.originalUrl.split("/videos/")[1].split("/comments")[0]
+        let content = req.body.toString().split("<content>")[1]
+                      .split("</content>")[0].split("    ").join("")
+
+        // create comment token
+        let commentToken = new create_comment_pb.root()
+        commentToken.setVideoid(id)
+        commentToken.setSevenint(7)
+        let zeroMsg = new create_comment_pb.root.zeroMsg();
+        zeroMsg.setZeroint(0)
+        commentToken.addFivemsg(zeroMsg)
+        let token = encodeURIComponent(Buffer.from(
+            commentToken.serializeBinary()
+        ).toString("base64"))
+
+        let cachedName = userdata[deviceId].cachedName
+
+        // fill cachedName in if not here
+        function pullCachedName(callback) {
+            if(!userdata[deviceId].cachedName) {
+                pullAllYouTubeAccounts(userdata[deviceId], (data) => {
+                    data.forEach(a => {
+                        if(a.selected) {
+                            cachedName = a.handle || a.name || "."
+                        }
+                    })
+                    callback(cachedName.replace("@", ""))
+                })
+            } else {
+                callback(cachedName)
+            }
+        }
+        
+        // post comment
+        setupYouTube(deviceId, (h) => {
+            pullCachedName((name) => {
+                fetch(hostname + "/youtubei/v1/comment/create_comment", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "commentText": content,
+                        "createCommentParams": token
+                    })
+                }).then(r => {r.json().then(r => {
+                    res.set("content-type", "application/atom+xml")
+                    if(!userdata[deviceId].cachedComments) {
+                        userdata[deviceId].cachedComments = []
+                    }
+                    userdata[deviceId].cachedComments.push([
+                        id,
+                        name,
+                        content,
+                        new Date().toISOString()
+                    ])
+                    res.send(templates.gdata_feedComment(
+                        id,
+                        name,
+                        content,
+                        new Date().toISOString()
+                    ))
+                    fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+                })})
+            })
+        })
+    },
+
+    "pullCommentsByUser": function(req) {
+        let deviceId = pullDeviceId(req)
+        if(!userdata[deviceId]
+        || !userdata[deviceId].cachedComments) return [];
+        let data = []
+        userdata[deviceId].cachedComments.forEach(c => {
+            data.push({
+                "video": c[0],
+                "name": c[1],
+                "content": c[2],
+                "date": c[3]
+            })
+        })
+        return data
+    },
+
+    "createPlaylist": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        if(!userdata[deviceId]) return;
+        let body = req.body.toString()
+        let name = body.split(`<title type='text'>`)[1].split("</title>")[0]
+        let addVideos = []
+        if(body.includes("<yt:videoid>")) {
+            addVideos.push(
+                body.split(`<yt:videoid>`)[1].split(`</yt:videoid>`)[0]
+            )
+        }
+        let isPrivate = body.includes("<yt:private")
+        setupYouTube(deviceId, (h) => {
+            fetch(hostname + "/youtubei/v1/playlist/create", {
+                "headers": h,
+                "method": "POST",
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "privacyStatus": isPrivate ? "PRIVATE" : "PUBLIC",
+                    "title": name,
+                    "videoIds": addVideos
+                })
+            }).then(r => {r.json().then(r => {
+                let p = r.playlistId;
+                //res.send(templates.gdata_emptyfeed)
+                res.redirect("/feeds/api/users/you/playlists/" + p)
+            })})
+        })
+    },
+
+    "pullPlaylistAsUser": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        res.set("content-type", "application/atom+xml")
+        if(!userdata[deviceId]) return;
+        let playlistId = ""
+        if(req.originalUrl.includes("/playlists/")) {
+            playlistId = req.originalUrl.split("/playlists/")[1]
+                            .split("?")[0];
+        } else if(req.playlistId) {
+            playlistId = req.playlistId
+        }
+        
+        let videos = []
+        let continuationsPulled = 0;
+    
+        // add to response
+        function createGdata() {
+            if(req.requestSmallJson) {
+                if(!pchelperWlCaching[deviceId]) {
+                    setTimeout(() => {
+                        pchelperWlCaching[deviceId] = null;
+                        delete pchelperWlCaching[deviceId]
+                    }, 1000 * 15)
+                }
+                pchelperWlCaching[deviceId] = videos;
+
+                let vs = []
+                videos.forEach(v => {
+                    try {
+                        if(v.type && v.type == "viewmodel_parsed") {
+                            if(!v.length) return;
+                            vs.push({
+                                "id": v.id,
+                                "title": v.title,
+                                "author": ""
+                            })
+                        } else {
+                            let author = v.shortBylineText.runs[0].text
+                            vs.push({
+                                "id": v.videoId,
+                                "title": v.title.runs[0].text,
+                                "author": author
+                            })
+                        }
+                    }
+                    catch(error) {}
+                })
+                res.send(vs)
+                return;
+            }
+            let fullRes = templates.gdata_feedStart
+            fullRes += `<yt:playlistId>${playlistId}</yt:playlistId>`
+    
+            videos.forEach(v => {
+                try {
+                    if(v.type && v.type == "viewmodel_parsed") {
+                        if(!v.length) return;
+                        fullRes += templates.gdata_feedVideo(
+                            v.id, v.title, "",
+                            "", v.length, "-", "", "-", "-",
+                            mobileflags.get_flags(req).watch,
+                            null, craftAdditional({}, v.id, req)
+                        )
+                    } else {
+                        if(!v.shortBylineText
+                        || !v.lengthSeconds
+                        || !v.isPlayable) return;
+                        let author = v.shortBylineText.runs[0]
+                                    .navigationEndpoint.browseEndpoint;
+                        if(author.canonicalBaseUrl
+                        && author.canonicalBaseUrl.includes("/@")) {
+                            author = author.canonicalBaseUrl.split("/@")[1]
+                        } else {
+                            author = author.browseId
+                        }
+                        fullRes += templates.gdata_feedVideo(
+                            v.videoId + "/fav", v.title.runs[0].text, author,
+                            "", parseInt(v.lengthSeconds), "-", "", "-",
+                            "-", mobileflags.get_flags(req).watch,
+                            null, craftAdditional({}, v.id, req)
+                        )
+                    }
+                    
+                }
+                catch(error){}
+            })
+    
+            fullRes += templates.gdata_feedEnd
+            res.send(fullRes)
+        }
+    
+        function getContinuation(token) {
+            setTimeout(() => {
+                setupYouTube(deviceId, (h) => {
+                    fetch(hostname + "/youtubei/v1/browse", {
+                        "headers": h,
+                        "method": "POST",
+                        "body": JSON.stringify({
+                            "context": androidContext,
+                            "continuation": token
+                        })
+                    }).then(r => {r.json().then(r => {
+                        r = r.continuationContents.playlistVideoListContinuation
+                        continuationsPulled++
+                        r.contents.forEach(v => {
+                            if(v.playlistVideoRenderer) {
+                                videos.push(v.playlistVideoRenderer)
+                            }
+                        })
+                        if(r.continuations && continuationsPulled <= 2) {
+                            let t = r.continuations[0].nextContinuationData.continuation
+                            getContinuation(t)
+                        } else {
+                            createGdata()
+                        }
+                    })})
+                })
+            }, 200)
+        }
+
+        if(pchelperWlCaching[deviceId]
+        && req.enableWlCache
+        && playlistId == "WL") {
+            videos = pchelperWlCaching[deviceId]
+            createGdata()
+            return;
+        }
+    
+        // pull first request + 2 continuations
+        setupYouTube(deviceId, (h) => {
+            fetch(hostname + "/youtubei/v1/browse", {
+                "headers": h,
+                "method": "POST",
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "VL" + playlistId
+                })
+            }).then(r => {r.json().then(r => {
+                try {
+                    r = r.contents.singleColumnBrowseResultsRenderer.tabs[0]
+                         .tabRenderer.content.sectionListRenderer.contents
+                         .filter(s => {
+                             return s.playlistVideoListRenderer
+                                 || s.itemSectionRenderer
+                         })
+                    if(r.playlistVideoListRenderer) {
+                        r = r.playlistVideoListRenderer
+                    } else if(r.itemSectionRenderer) {
+                        r = r.itemSectionRenderer
+                    }
+                }
+                catch(error) {
+                    createGdata()
+                    return;
+                }
+                if(r.filter(s => {return s.playlistVideoListRenderer})[0]) {
+                    r = r.filter(s => {return s.playlistVideoListRenderer})[0]
+                         .playlistVideoListRenderer
+                } else {
+                    r = r.filter(s => {return s.itemSectionRenderer})
+                    if(r.length >= 2) {
+                        let z = {"contents": []}
+                        r.forEach(s => {
+                            if(s.itemSectionRenderer
+                            && s.itemSectionRenderer.contents) {
+                                s.itemSectionRenderer.contents.forEach(i => {
+                                    z.contents.push(i)
+                                })
+                            }
+                        })
+                        r = z;
+                    }
+                }
+                if(!r || !r.contents) {
+                    createGdata()
+                    return;
+                }
+                r.contents.forEach(v => {
+                    if(v.playlistVideoRenderer) {
+                        videos.push(v.playlistVideoRenderer)
+                    } else if(v.elementRenderer) {
+                        // viewmodel playlist video
+                        try {
+                            v = v.elementRenderer.newElement.type.componentType
+                                .model.videoWithContextModel.videoWithContextData
+                                .videoData
+                            videos.push(parseViewmodelVideo(v, "JOIN"))
+                        }
+                        catch(error){}
+                    }
+                })
+                if(r.continuations && continuationsPulled <= 2) {
+                    let t = r.continuations[0].nextContinuationData.continuation
+                    getContinuation(t)
+                } else {
+                    createGdata()
+                }
+            })})
+        })
+    },
+
+    "rateVideo": function(req, res) {
+        let deviceId = pullDeviceId(req)
+        let video = req.originalUrl.split("/videos/")[1].split("/rating")[0]
+        let state = "like"
+        if(req.body.toString() && req.body.toString().includes("dislike")) {
+            state = "dislike"
+        }
+        setupYouTube(deviceId, (h) => {
+            fetch(hostname + "/youtubei/v1/like/" + state, {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "target": {
+                        "videoId": video
+                    }
+                })
+            }).then(r => {
+                res.sendStatus(200)
+            })
+        })
+    },
+
+    "outsourceBareVideo": function(req, res) {
+        let device = pullDeviceId(req)
+        if(device.startsWith("u2-")) {
+            device = decryptWthIk(device.split("u2-")[1])
+        }
+        let urlFlags = mobileflags.url_flags(req)
+        req.headers.overrideAddSabr = true
+        res.send(templates.gdata_feedVideo(
+            "12345678911",
+            "open this video to complete your yt2009 sign in",
+            "completesignin", "1", "1",
+            `open the link below for more information on completing sign in to your google account on a yt2009 app.
+you will need a PC with a modern browser for this.
+
+[!] only do this for instances you trust.
+
+currently used instance: ${config.ip}
+
+complete sign in:
+http://${config.ip}:${config.port}/gsign?device=${device}`,
+            "1900-01-01", "-", "-", "", "", 
+            craftAdditional({"urlFlags": urlFlags}, "W9nZ6u15yis", req)
+        ))
+    },
+
+    "manageSubscription": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            res.sendStatus(404);
+            return;
+        }
+        let state = "subscribe"
+        let user = ""
+        if(!req.body || !req.body.toString().includes("<yt:username>")) {
+            res.sendStatus(400);
+            return;
+        }
+        if(req.body.toString().includes("<yt:unsubscribe/>")) {
+            state = "unsubscribe"
+        }
+        user = req.body.toString().split("<yt:username>")[1].split("</yt")[0]
+        setupYouTube(device, (h) => {
+            function onceIdPull(id) {
+                fetch(hostname + "/youtubei/v1/subscription/" + state, {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "channelIds": [id]
+                    })
+                }).then(r => {
+                    res.sendStatus(200)
+                })
+            }
+
+            if(!user.startsWith("UC")) {
+                require("./cache_dir/userid_cache").read("/@" + user, (id) => {
+                    if(!id) {
+                        res.sendStatus(404)
+                        return;
+                    }
+                    onceIdPull(id)
+                })
+            } else {
+                onceIdPull(user)
+            }
+        })
+    },
+
+    "hasLogin": function(req) {
+        if(typeof(req) == "string") {
+            if(userdata[req]) {
+                return true;
+            }
+            return false;
+        }
+        let deviceId = pullDeviceId(req)
+        if(userdata[deviceId]) {
+            return true;
+        }
+        return false;
+    },
+
+    "parseProtoViewmodelNext": function(data) {
+        let videos = []
+        const cid = [
+            "QWERTYUIOPASDFGHJKLZXCVBNM",
+            "qwertyuiopasdfghjklzxcvbnm",
+            "1234567890_-"
+        ].join("").split("")
+
+        //fs.writeFileSync("test.txt", data)
+
+        data.split("video_lockup_with_attachment").forEach(v => {try{
+            if(v.includes("vi/") || v.includes("vi_webp/")) {
+                // video result
+                let id = ""
+                try {id = v.split("vi/")[1].split("/")[0].substring(0,11)}
+                catch(error) {id = v.split("vi_webp/")[1].split("/")[0].substring(0,11)}
+                let authorPicture = "https://yt3.ggpht.com/" 
+                                  + v.split("https://yt3.ggpht.com/")[1]
+                                     .split(" ")[0]
+
+                let views = v.split(" views")[0]
+                views = views.split(" ")[views.split(" ").length - 1]
+                if(isNaN(parseInt(views))) return;
+
+                let title = v.split("/watch?v=" + id)[1].split(" - Go to channel")[0]
+                title = title.split(" - ").slice(
+                    0, title.split(" - ").length - 1
+                ).join(" - ")
+                if(title.includes("\x01")) {
+                    title = title.split("\x01")[title.split("\x01").length - 1]
+                } else {
+                    title = title.substring(2)
+                }
+                if(title.includes("\x12")) {
+                    title = title.substring(3)
+                }
+                if(title.length >= 300 || title.includes("\x00")
+                || title.includes("\x01") || title.includes("\x02")) return;
+
+                let authorHandle = false
+                if(v.includes("/@")) {
+                    authorHandle = v.split("/@")[1].split("2+")[0].split("+")[0]
+                    authorHandle = decodeURIComponent(authorHandle)
+                }
+                let authorId = ""
+                if(v.includes("UC")) {
+                    let ids = v.split("UC")
+                    ids.forEach(s => {
+                        let pid = s.substring(0,22)
+                        if(pid.split("").filter(s => cid.includes(s)).length == 22) {
+                            authorId = "UC" + pid;
+                        }
+                    })
+                }
+
+                let authorFull = ""
+                try {
+                    authorFull = v.split(" · ")[0].split("\u001a")
+                    authorFull = authorFull[authorFull.length - 1].substring(1)
+                    if(authorFull.includes("\x00")
+                    || authorFull.includes("\x12")) {
+                        authorFull = authorFull.split("\n")
+                        authorFull = authorFull[authorFull.length - 1]
+                        authorFull = authorFull.substring(1)
+                    }
+                }
+                catch(error) {
+                    //console.log(error)
+                }
+
+                let length = v.split(" second")[0]
+                if(!v.includes(" second") && v.includes(" minute")) {
+                    length = v.split(" minute")[0]
+                }
+                length = length.split("(")[length.split("(").length - 1]
+                               .split(" ")[0]
+                length = length.replace(/[^0-9+\:]/g, "")
+
+                if(utils.time_to_seconds(length) >= 7200) return;
+
+                let upload = v.split(" ago")[0]
+                upload = upload.split(" · ")[upload.split(" · ").length - 1]
+                if(isNaN(parseInt(upload.substring(0,2)))) {
+                    upload = "1 minute ago"
+                }
+
+                videos.push({
+                    "id": id,
+                    "title": title,
+                    "authorFull": authorFull,
+                    "authorHandle": authorHandle,
+                    "authorId": authorId,
+                    "length": utils.time_to_seconds(length),
+                    "views": utils.approxSubcount(views),
+                    "authorAvatar": utils.saveAvatar(authorPicture),
+                    "upload": utils.relativeToAbsoluteApprox(upload)
+                })
+            }
+        }catch(error){}})
+
+        return videos;
+    },
+
+    "unlink": function(req, res) {
+        if(!req.query.device) {
+            res.sendStatus(400);
+            return;
+        }
+        let device = gmcu(req.query.device)
+        if(!device) {
+            res.sendStatus(400)
+            return;
+        }
+        userdata[device] = false;
+        delete userdata[device];
+        res.status(200);
+        fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+        let msg = `unlink successful! you can now close this window.
+        <script>
+            document.cookie = "pchelper_user=a; Path=/; expires=Fri, 31 Dec 2008 23:59:59 GMT";
+        </script>`
+        res.send(msg)
+    },
+
+    "pullOwnVideos": function(req, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            res.sendStatus(404);
+            return;
+        }
+        let videos = []
+        setupYouTube(device, (h) => {
+            let oirMirror = this.openInsightRequest
+            function parseResponse(r) {
+                if(!r
+                || !r.frameworkUpdates
+                || !r.frameworkUpdates.entityBatchUpdate
+                || !r.frameworkUpdates.entityBatchUpdate.mutations) {
+                    return false;
+                }
+                r.frameworkUpdates.entityBatchUpdate.mutations.forEach(m => {
+                    if(m.payload && m.payload.creatorVideoData) {try {
+                        let v = m.payload.creatorVideoData
+                        let likes = 0;
+                        let dislikes = 0;
+                        let comments = 0;
+                        let views = 0;
+                        if(v.metrics) {
+                            likes = parseInt(v.metrics.likeCount)
+                            dislikes = parseInt(v.metrics.dislikeCount)
+                            comments = v.metrics.commentCount
+                            views = v.metrics.viewCount
+                        } else if(v.publicMetrics) {
+                            likes = parseInt(v.publicMetrics.likeCount)
+                            comments = v.publicMetrics.commentCount;
+                            views = v.publicMetrics.externalViewCount
+                        }
+                        let added = parseInt(v.timeCreatedSeconds) * 1000
+                        let needThumbnail = false
+                        if(v.privacy == "VIDEO_PRIVACY_PRIVATE") {
+                            let thumb = v.thumbnailDetails.thumbnails.filter(s => {
+                                return s.url && s.url.includes("hqdefault")
+                            })
+                            if(thumb[0]) {
+                                needThumbnail = thumb[0].url
+                            }
+                        }
+                        videos.push({
+                            "id": v.videoId,
+                            "title": v.title,
+                            "likes": likes,
+                            "dislikes": dislikes,
+                            "comments": comments,
+                            "views": views,
+                            "added": added,
+                            "downloadUrl": v.downloadUrl,
+                            "time": utils.seconds_to_time(v.lengthSeconds),
+                            "privacy": v.privacy,
+                            "thumbnail": needThumbnail
+                        })
+                    }catch(error){console.log(error)}}
+                })
+                callback(videos)
+                return true;
+            }
+            function androidDefaultRequest() {
+                fetch(hostname + "/youtubei/v1/browse", {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "browseId": "FEmy_videos"
+                    })
+                }).then(r => {r.json().then(r => {
+                    let isOk = parseResponse(r)
+                    if(!isOk) {
+                        androidCreatorRequest()
+                    }
+                })})
+            }
+            function androidCreatorRequest() {
+                oirMirror(req, "browse", {
+                    "browseId": "FEcreator_content"
+                }, (r) => {
+                    let isOk = parseResponse(r)
+                    if(!isOk) {
+                        // both methods failed, don't hang
+                        callback([])
+                    }
+                }, true)
+            }
+            androidDefaultRequest()
+        })
+    },
+
+    "locAutocomplete": function(req, callback, useHostAccount) {
+        if(!req.query.query) {
+            callback(false)
+        }
+        let q = req.query.query
+        let device = pullDeviceId(req)
+        if(!userdata[device] && !useHostAccount) {
+            callback([])
+            return;
+        }
+        function request(h) {
+            let root = new protobufNextReq.root()
+            let context = new protobufNextReq.root.contextType()
+            let client = new protobufNextReq.root.contextType.clientType()
+            client.setClientnumber(3)
+            client.setClientversion("21.16")
+            client.setOsname("Android")
+            client.setOsversion("14")
+            client.setAndroidsdkversion(34)
+            context.addClient(client)
+            root.setParams(q)
+            root.addContext(context)
+            let pbmsg = root.serializeBinary()
+
+            h["Content-Type"] = "application/x-protobuf"
+            h["x-goog-api-format-version"] = "2"
+            fetch("https://youtubei.googleapis.com/youtubei/v1/geo/place_autocomplete", {
+                "method": "POST",
+                "headers": h,
+                "body": pbmsg
+            }).then(s => (s.text().then(s => {
+                let filteredList = []
+                s = s.split("\x1a").filter(e => {return e.includes("ChIJ")})
+                s.shift()
+                s.forEach(l => {
+                    let pname = l.split("\n")
+                    let placeId = ""
+                    pname.forEach(part => {
+                        if(part.startsWith("\x1BChIJ")) {
+                            placeId = part.split("\x1B")[1].split("\x12")[0]
+                        }
+                    })
+                    pname = pname[pname.length - 1]
+                            .replace(/\p{Other_Symbol}/gui, "")
+                    while(pname.length > 0 && pname.charCodeAt(0) < 48) {
+                        pname = pname.substring(1)
+                    }
+                    if(pname.includes("\x12") || pname.length == 0) return;
+                    if(filteredList.filter(e => e[1] == pname).length == 0) {
+                        filteredList.push([placeId, pname])
+                    }
+                })
+
+                callback(filteredList)
+            })))
+        }
+
+        if(!useHostAccount) {
+            setupYouTube(device, (h) => {
+                request(h)
+            })
+        } else {
+            const account = require("./yt2009androidsignin").getData()
+            if(!account || !account.yAuth) {
+                callback([])
+                return;
+            }
+            let h = JSON.parse(JSON.stringify(androidHeaders))
+            h.Authorization = `Bearer ${account.yAuth}`
+            request(h)
+        }
+    },
+
+    "pullPlayer": function(req, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        const EXP_GET_WATCH = false;
+        const GET_WATCH_URL = hostname + "/youtubei/v1/get_watch?prettyPrint=false"
+        const PLAYER_URL = hostname + "/youtubei/v1/player?prettyPrint=false"
+        const PP = yt2009exports.read().d
+                 ? yt2009exports.read().dkey
+                 : "YAHIAQG4BAXwBAH4BAGiBhUBO2AyIiLNmoS-Uloagnd1K2d5DPc%3D"
+        //console.log("use pchelper")
+        let callbackSent = false;
+        let resentRequestSlow = false;
+		let pot = null;
+		let waitForPot = false;
+        let potBytes = null;
+        let potKey = null;
+        let context = androidContext;
+        if(req.highEndDevice) {
+            context.client.deviceMake = "Google"
+            context.client.deviceModel = "Pixel 9"
+            context.client.deviceCodename = "tegu"
+        }
+        function processPlayerResponse(r) {
+            r = utils.markOriginalAudioFormats(r)
+            if(r.streamingData
+            && r.streamingData.serverAbrStreamingUrl
+            && yt2009exports.read().d) {
+                r.streamingData.serverAbrStreamingUrl = null;
+                r.streamingData.isD = true;
+            }
+            return r;
+        }
+		if(req.usePot) {
+			waitForPot = true;
+			this.openDatasyncId(req, (datasync) => {
+				yt2009pot.generatePo(datasync, (pot) => {
+					let potContainer = new playerRequestProto.root
+										   .serviceIntegrityDimensionsMsg
+										   .container()
+					let potContent = new playerRequestProto.root
+										 .serviceIntegrityDimensionsMsg
+										 .container.contents()
+					potContent.setEncryptdata(pot.encryptData)
+					potContent.setTokendata(pot.backup)
+					potContainer.addContent(potContent)
+                    potBytes = pot.encryptData;
+                    potKey = pot.backup;
+					pot = utils.base64toUrl(Buffer.from(
+						potContainer.serializeBinary()
+					).toString("base64"))
+					doRequest()
+				}, true)
+			})
+		}
+		function doRequest() {
+			setupYouTube(device, (h) => {
+                if(EXP_GET_WATCH) {
+                    fetch(GET_WATCH_URL, {
+                        "headers": h,
+                        "method": "POST",
+                        "body": JSON.stringify({
+                            "context": context,
+                            "playerRequest": {
+                                "videoId": req.query.video_id.substring(0,11),
+                                "serviceIntegrityDimensions": {
+                                    "poToken": pot
+                                },
+                                "params": PP,
+                                "racyCheckOk": true,
+                                "contentCheckOk": true
+                            }
+                        }),
+                        "agent": utils.createFetchAgent()
+                    }).then(r => {r.json().then(r => {
+                        if(callbackSent) return;
+                        r = r.filter(s => {
+                            return s && s.playerResponse
+                        })[0].playerResponse
+                        r = processPlayerResponse(r)
+                        if(req.callbackPot) {
+                            callback([r, potBytes, potKey])
+                        } else {
+                            callback(r)
+                        }
+                        callbackSent = true;
+                    })})
+                    return;
+                }
+				fetch(PLAYER_URL, {
+					"headers": h,
+					"method": "POST",
+					"body": JSON.stringify({
+						"context": context,
+						"videoId": req.query.video_id.substring(0,11),
+						"serviceIntegrityDimensions": {
+                            "poToken": pot
+                        },
+                        "params": PP,
+                        "racyCheckOk": true,
+                        "contentCheckOk": true
+					}),
+					"agent": utils.createFetchAgent()
+				}).then(r => {r.json().then(r => {
+                    if(callbackSent) return;
+                    r = processPlayerResponse(r)
+                    if(req.callbackPot) {
+                        callback([r, potBytes, potKey])
+                    } else {
+                        callback(r)
+                    }
+                    callbackSent = true;
+				})})
+                setTimeout(() => {
+                    if(!callbackSent && !resentRequestSlow) {
+                        resentRequestSlow = true;
+                        if(config.env == "dev") {
+                            console.log("mh /player too slow, resending")
+                        }
+                        doRequest();
+                    }
+                }, 500)
+			})
+		}
+		if(!waitForPot) {doRequest()}
+    },
+
+    "applyUpdateMetadata": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        setupYouTube(device, (h) => {
+            h["Content-Type"] = "application/x-protobuf"
+            h["x-goog-api-format-version"] = "2"
+            fetch("https://youtubei.googleapis.com/youtubei/v1/video_manager/metadata_update", {
+                "method": "POST",
+                "headers": h,
+                "body": req.protoBody
+            }).then(r => {
+                if(r.status == 200) {
+                    res.redirect("/my_videos")
+                } else {
+                    res.sendStatus(r.status)
+                }
+            })
+        })
+    },
+
+    "analyticsMain": function(req, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        pullUserIdFromDevice(device, (id) => {
+            if(id.type || typeof(id) !== "string") {
+                callback({})
+                return;
+            }
+            let msg = new protoAnalytics.root()
+            let mc = new protoAnalytics.root.reqParamContents()
+            mc.setChannelid(id)
+            msg.addContents(mc)
+            let params = Buffer.from(
+                msg.serializeBinary()
+            ).toString("base64")
+
+            setupYouTube(device, (h) => {
+                fetch("https://youtubei.googleapis.com/youtubei/v1/browse", {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "browseId": "FEanalytics_screen",
+                        "params": params
+                    })
+                }).then(r => {r.json().then(r => {
+                    let data = {
+                        "recentViews": [],
+                        "audiences": [],
+                        "mostViewed": []
+                    }
+                    let contents = []
+                    try {
+                        contents = r.contents.singleColumnBrowseResultsRenderer
+                        .tabs[0].tabRenderer.content.sectionListRenderer
+                        .contents[0].itemSectionRenderer.contents
+                    }
+                    catch(error) {console.log(error)}
+                    //fs.writeFileSync("./test.json", JSON.stringify(contents))
+                    contents.forEach(e => {
+                        try {
+                            e = e.elementRenderer.newElement.type.componentType
+                                 .model;
+                            if(e.analyticsRecentViewsModel) {
+                                e.analyticsRecentViewsModel.bars.forEach(b => {
+                                    data.recentViews.push(b)
+                                })
+                            }
+                            if(e.analyticsRootModel) {
+                                e.analyticsRootModel.analyticsTableCarouselData
+                                .data.tableCards.forEach(card => {
+                                    let m = []
+                                    card.cardData.rows.forEach(r => {
+                                        m.push(r)
+                                    })
+                                    data.audiences.push(m)
+                                })
+                            }
+                            if(e.analyticsVodCarouselCardModel) {
+                                e.analyticsVodCarouselCardModel.videoCarouselData
+                                .videos.forEach(v => {
+                                    data.mostViewed.push(v)
+                                })
+                            }
+                        }
+                        catch(error) {console.log(error)}
+                    })
+                    callback(data)
+                })})
+            })
+        })
+    },
+
+    "upload": function(req, flowData, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        let initHeaders = {
+            "user-agent": upUA,
+            "x-goog-upload-header-content-length": flowData.fsize,
+            "x-goog-upload-command": "start",
+            "x-goog-upload-protocol": "resumable",
+            "content-type": "application/x-www-form-urlencoded"
+        }
+        
+        // generate upload uuid
+        // from https://github.com/yusufusta/ytstudio/
+        let uuid = ""
+        let keys = []
+        while(keys.length !== 36) {
+            keys.push(" ")
+        }
+        let chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("")
+        let e = 0;
+        let b = 0;
+        let c = ""
+        while(e < 36) {
+            if(e == 8 || e == 13 || e == 18 || e == 23) {
+                keys[e] = "-"
+            } else {
+                if(e == 14) {
+                    keys[e] = "4"
+                } else if(b <= 2) {
+                    let r = Math.random()
+                    while(r >= 0.9) {
+                        r = Math.random()
+                    }
+                    b = Math.round(33554432 + 16777216 * r)
+                }
+                c = b & 15;
+                b = b >> 4;
+                let index = 0;
+                if(e == 19) {
+                    index = (c & 3 | 8)
+                } else {
+                    index = c;
+                }
+                keys[e] = chars[index]
+            }
+            e++
+        }
+        uuid = keys.join("").toLowerCase()
+        
+        let uploadId = "innertube_android:"+uuid+":0:v=3,api=1,cf=3"
+        flowData.frontendUuid = uploadId
+        let initialData = JSON.parse(JSON.stringify(upInitial))
+        initialData.frontendUploadId = uploadId
+
+        // flow 1 - create upload session
+        setupYouTube(device, (h) => {
+            initHeaders.Authorization = h.Authorization
+            if(h["x-goog-pageid"]) {
+                initHeaders["x-goog-pageid"] = h["x-goog-pageid"]
+            }
+            fetch("https://upload.youtube.com/upload/youtubei", {
+                "headers": initHeaders,
+                "method": "POST",
+                "body": initialData
+            }).then(r => {
+                if(r.status !== 200) {
+                    console.log("INITIAL UP received " + r.status + "!")
+                    callback(false)
+                    return;
+                }
+                flowData.uploadUrl = r.headers.get("x-goog-upload-url")
+                flowData.controlUrl = r.headers.get("x-goog-upload-control-url")
+                flowData.scottyId = r.headers.get("x-goog-upload-header-scotty-resource-id")
+                queryUploadUrl();
+            })
+        })
+
+        // flow 2 - query upload id
+        function queryUploadUrl() {
+            fetch(flowData.uploadUrl, {
+                "headers": {
+                    "user-agent": upUA,
+                    "x-goog-upload-command": "query",
+                    "x-goog-upload-protocol": "resumable"
+                },
+                "method": "PUT"
+            }).then(r => {
+                if(r.status !== 200) {
+                    callback(false)
+                    console.log("QUERYUPLOAD received " + r.status + "!")
+                    return;
+                }
+                if(r.headers.has("x-guploader-uploadid")) {
+                    flowData.uploadId = r.headers.get("x-guploader-uploadid")
+                } else if(flowData.uploadUrl.includes("upload_id=")) {
+                    let uid = flowData.upload.split("upload_id=")[1]
+                                      .split("&")[0].split("#")[0];
+                    flowData.uploadId = uid;
+                }
+                if(r.headers.has("x-goog-upload-status")
+                && r.headers.get("x-goog-upload-status") == "active") {
+                    uploadFile()
+                }
+            })
+        }
+
+        // flow 3 - upload video file to server
+        function uploadFile() {
+            let dir = `${__dirname}/../assets/user-uploads-tmp`
+            const stream = fs.createReadStream(`${dir}/${flowData.fname}`)
+
+            fetch(flowData.uploadUrl, {
+                "headers": {
+                    "user-agent": upUA,
+                    "x-goog-upload-command": "upload, finalize",
+                    "x-goog-upload-protocol": "resumable",
+                    "x-goog-upload-offset": "0",
+                    "content-length": flowData.fsize
+                },
+                "method": "PUT",
+                "body": stream
+            }).then(r => {
+                if(r.status !== 200) {
+                    callback(false)
+                    console.log("UPLOADFILE return " + r.status + "!")
+                    return;
+                }
+                r.text().then(r => {
+                    try {flowData.nScotty = JSON.parse(r).scottyResourceId}
+                    catch(error) {}
+                    createInnertubeEntry()
+                })
+            })
+        }
+
+        // flow 4 - create video entry thru innertube
+        function createInnertubeEntry() {
+            let pageId = ""
+            let channelId = ""
+            function sendCreate() {
+                setupYouTube(device, (h) => {
+                    let privacy = flowData.privacy || "public"
+                    if(privacy !== "public"
+                    && privacy !== "unlisted"
+                    && privacy !== "private") {
+                        privacy = "public"
+                    }
+                    privacy = privacy.toUpperCase()
+    
+                    let nc = JSON.parse(JSON.stringify(androidContext))
+                    nc.user = {
+                        "onBehalfOfUser": pageId,
+                        "delegationContext": {
+                            "externalChannelId": channelId,
+                            "roleType": {
+                                "channelRoleType": "CREATOR_CHANNEL_ROLE_TYPE_OWNER"
+                            }
+                        }
+                    }
+
+                    fetch("https://youtubei.googleapis.com/youtubei/v1/upload/createvideo", {
+                        "headers": h,
+                        "method": "POST",
+                        "body": JSON.stringify({
+                            "context": nc,
+                            "resourceId": {"scottyResourceId": {
+                                "id": flowData.scottyId
+                            }},
+                            "frontendUploadId": uploadId,
+                            "initialMetadata": {
+                                "privacy": {"newPrivacy": privacy}
+                            }
+                        })
+                    }).then(r => {r.json().then(r => {
+                        //console.log(r)
+                        if(r.videoId) {
+                            flowData.videoId = r.videoId;
+                            updateMetadata()
+                        } else {
+                            console.log("smth went wrong", flowData)
+                            callback(false)
+                        }
+                    })})
+                })
+            }
+            pullAllYouTubeAccounts(userdata[device], (data) => {
+                data.forEach(a => {
+                    if(a.selected) {
+                        pageId = a.pageId
+                    }
+                })
+                if(channelId && pageId) {
+                    sendCreate()
+                }
+            })
+            pullUserIdFromDevice(device, (id) => {
+                channelId = id;
+                if(channelId && pageId) {
+                    sendCreate()
+                }
+            })
+            
+        }
+
+        // flow 5 - update video metadata to include things like description
+        function updateMetadata() {
+            let root = new metadataUpdate.root()
+            let context = new metadataUpdate.root.contextType()
+            let client = new metadataUpdate.root.contextType.clientType()
+            client.setClientnumber(3)
+            client.setClientversion("21.16")
+            client.setOsname("Android")
+            client.setOsversion("14")
+            client.setAndroidsdkversion(34)
+            context.addClient(client)
+            root.addContext(context)
+
+            root.setBrowseid(flowData.videoId)
+            root.setEightythree(1)
+
+            let titleUpd = new metadataUpdate.stringUpdateMsg()
+            titleUpd.addNewstring(flowData.title)
+            titleUpd.setUpdatetype(1)
+            root.addTitleupdate(titleUpd)
+
+            if(flowData.description) {
+                let upd = new metadataUpdate.stringUpdateMsg()
+                upd.addNewstring(flowData.description)
+                upd.setUpdatetype(1)
+                root.addDescriptionupdate(upd)
+            }
+
+            if(flowData.tags) {
+                let upd = new metadataUpdate.stringUpdateMsg()
+                flowData.tags = flowData.tags.split(" ")
+                flowData.tags.forEach(t => {
+                    upd.addNewstring(t.trim())
+                })
+                upd.setUpdatetype(1)
+                root.addTagsupdate(upd)
+            }
+
+            const acceptedPrivacyValues = ["public", "unlisted", "private"]
+            if(flowData.privacy
+            && acceptedPrivacyValues.includes(flowData.privacy)) {
+                let shouldUpd = new metadataUpdate.updateToggle()
+                shouldUpd.setUpdatefield(1)
+                root.addUpdateprivacysettings(shouldUpd)
+                let updSettings = new metadataUpdate.updateToggle()
+                switch(flowData.privacy) {
+                    case "public": {
+                        updSettings.setUpdatefield(1)
+                        break;
+                    }
+                    case "unlisted": {
+                        updSettings.setUpdatefield(2)
+                        break;
+                    }
+                    case "private": {
+                        updSettings.setUpdatefield(0)
+                        break;
+                    }
+                }
+                root.addVideoprivacy(updSettings)
+            }
+
+            const acceptedCommentsValues = [
+                "allow-all", "allow-friends", "allow-approved", "deny-all"
+            ]
+            if(flowData.comments
+            && acceptedCommentsValues.includes(flowData.comments)) {
+                let upd = new metadataUpdate.commentsUpdateMsg()
+                upd.setInt4(1)
+                upd.setInt5(1)
+                switch(flowData.comments) {
+                    case "allow-all": {
+                        upd.setAllowcomments(2)
+                        upd.setModerationtype(1)
+                        break;
+                    }
+                    case "allow-friends": {
+                        upd.setAllowcomments(2)
+                        upd.setModerationtype(3)
+                        break;
+                    }
+                    case "allow-approved": {
+                        upd.setAllowcomments(2)
+                        upd.setModerationtype(2)
+                        break;
+                    }
+                    case "deny-all": {
+                        upd.setAllowcomments(1)
+                        break;
+                    }
+                }
+                root.addCommentsupdate(upd)
+            }
+
+            let pbmsg = root.serializeBinary()
+            
+            setupYouTube(device, (h) => {
+                h["Content-Type"] = "application/x-protobuf"
+                h["x-goog-api-format-version"] = "2"
+                fetch("https://youtubei.googleapis.com/youtubei/v1/video_manager/metadata_update", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": pbmsg
+                }).then(r => {
+                    if(r.status == 200) {
+                        callback(flowData)
+                    } else {
+                        console.log("METADATAUPDATE return " + r.status + "!")
+                        callback(false)
+                    }
+                })
+            })
+        }
+    },
+
+    "openBrowseId": function(req, callback, canUseCache) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        if(canUseCache && userdata[device].userId) {
+            callback(userdata[device].userId)
+            return;
+        }
+        pullUserIdFromDevice(pullDeviceId(req), (id) => {
+            if(id.type) {
+                if(canUseCache && !userdata[device].userId) {
+                    userdata[device].userId = "none"
+                    fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+                }
+                callback(false)
+                return;
+            }
+            if(canUseCache && !userdata[device].userId) {
+                userdata[device].userId = id;
+                fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+            }
+            callback(id)
+        })
+    },
+
+    "changeAvatar": function(req, imgPath, callback) {
+        imgPath = imgPath.split("..").join("")
+        if(imgPath.startsWith("/assets/")) {
+            imgPath = ".." + imgPath
+        }
+
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+
+        pullUserIdFromDevice(device, (id) => {
+            if(id.type || !id) {
+                callback(false)
+                return;
+            }
+            let h = {}
+            setupYouTube(device, (headers) => {
+                for(let n in headers) {
+                    h[n] = headers[n]
+                }
+                if(id) {
+                    h["x-youtube-channelid"] = id;
+                }
+                h["content-type"] = "application/json-rpc; charset=utf-8"
+                h["x-goog-upload-command"] = "start"
+                h["x-goog-upload-protocol"] = "resumable"
+                fetch("https://www.youtube.com/channel_image_upload/profile", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": ""
+                }).then(r => {
+                    let uploadUrl = ""
+                    if(r.headers.has("X-Goog-Upload-URL")) {
+                        uploadUrl = r.headers.get("X-Goog-Upload-URL")
+                    } else if(r.headers.has("X-GUploader-UploadID")) {
+                        uploadUrl = [
+                            "https://www.youtube.com/channel_image_upload/profile",
+                            "?upload_id=" + r.headers.get("X-GUploader-UploadID")
+                        ].join("")
+                    }
+
+                    if(uploadUrl) {
+                        console.log(uploadUrl)
+                        uploadImage(uploadUrl, h, id)
+                    }
+                })
+            })
+        })
+
+        function uploadImage(url, headers, userId) {
+            const stream = fs.createReadStream(imgPath)
+            headers["x-goog-upload-command"] = "upload, finalize"
+            headers["x-goog-upload-offset"] = "0"
+            headers["content-length"] = fs.statSync(imgPath).size
+            fetch(url, {
+                "method": "PUT",
+                "headers": headers,
+                "body": stream
+            }).then(r => {r.json().then(r => {
+                // get blobId to update with innertube
+                if(r.encryptedBlobId) {
+                    innertubeUpdate(r.encryptedBlobId, userId)
+                } else {
+                    callback(500)
+                }
+            })})
+        }
+
+        function innertubeUpdate(blob, userId) {
+            let root = new userMetadata.root()
+            let context = new userMetadata.root.contextType()
+            let client = new userMetadata.root.contextType.clientType()
+            client.setClientnumber(3)
+            client.setClientversion("21.16")
+            client.setOsname("Android")
+            client.setOsversion("14")
+            client.setAndroidsdkversion(34)
+            context.addClient(client)
+            root.addContext(context)
+
+            root.setBrowseid(userId)
+
+            let upd = new userMetadata.stringUpdateMsg()
+            upd.addNewstring(blob)
+            root.addAvatarblob(upd)
+            
+            let pbmsg = root.serializeBinary()
+            
+            setupYouTube(device, (h) => {
+                h["Content-Type"] = "application/x-protobuf"
+                h["x-goog-api-format-version"] = "2"
+                fetch("https://youtubei.googleapis.com/youtubei/v1/channel_edit/update_channel_page_settings", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": pbmsg
+                }).then(r => {
+                    callback(r.status)
+                })
+            })
+        }
+    },
+
+    "deleteVideos": function(req, res) {
+        if(!req.body
+        || !req.body.toString()
+        || !req.body.toString().includes("video_ids=")) {
+            res.sendStatus(400)
+            return;
+        }
+
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            res.sendStatus(400)
+            return;
+        }
+
+        let videos = req.body.toString()
+                        .split("video_ids=")[1]
+                        .split("&")[0].split(",");
+        if(videos.length < 1) {
+            res.sendStatus(400)
+            return;
+        }
+
+        if(!req.setS) {
+            req.setS = function(s) {}
+        }
+        if(!res.setS) {
+            res.setS = function(s) {}
+        }
+
+        if(videos.length == 1) {
+            setupYouTube(device, (h) => {
+                fetch(hostname + "/youtubei/v1/video/delete", {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "videoId": videos[0]
+                    })
+                }).then(r => {
+                    res.setS("SINGLE_DELETE")
+                    res.sendStatus(r.status)
+                })
+            })
+        } else {
+            setupYouTube(device, (h) => {
+                fetch(hostname + "/youtubei/v1/creator/enqueue_creator_bulk_delete", {
+                    "headers": h,
+                    "method": "POST",
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "videos": {"videoIds": videos}
+                    })
+                }).then(r => {
+                    res.setS("MULTI_DELETE")
+                    res.sendStatus(r.status)
+                })
+            })
+        }
+    },
+
+    "createCustomization": function(req, params, res) {
+        let t = this;
+        let fetchesRequired = 0;
+        let fetchesCompleted = 0;
+
+        if(!params.fields) {
+            params.fields = {}
+        }
+        if(!params.checkboxes) {
+            params.checkboxes = {}
+        }
+        if(!params.themeName) {
+            params.themeName = "custom"
+        }
+        let msg = new customChannel.root()
+        msg.setTitle(params.fields.channel_title_input)
+        let validTypes = ["u", "d", "m", "c", "g", "j"]
+        if(params.fields.channel_type
+        && validTypes.includes(params.fields.channel_type)) {
+            msg.setType(params.fields.channel_type)
+        }
+        msg.setTags(params.fields.keywords)
+
+        let themes = {
+            "default": 1,
+            "blue": 2,
+            "red": 3,
+            "sunlight": 4,
+            "forest": 5,
+            "8bit": 6,
+            "princess": 7,
+            "fire": 8,
+            "stealth": 9,
+            "clean": 10,
+            "custom": 11
+        }
+        msg.setThemeid(themes[params.themeName] || 1)
+
+        let fonts = {
+            "Times New Roman": 1,
+            "Arial": 2,
+            "Verdana": 3,
+            "Georgia": 4,
+            "Courier New": 5
+        }
+        msg.setFont(fonts[params.fields.font.split("+").join(" ")] || 2)
+
+        msg.setBackgroundcolor(params.fields.background_color || "CCCCCC")
+        msg.setWrappercolor(params.fields.wrapper_color || "999999")
+        msg.setWrappertextcolor(params.fields.wrapper_text_color || "000000")
+        msg.setWrapperlinkcolor(params.fields.wrapper_link_color || "0000cc")
+        msg.setInnerboxbackgroundcolor(
+            params.fields.box_background_color || "eeeeff"
+        )
+        msg.setInnerboxtitletextcolor(
+            params.fields.title_text_color || "000000"
+        )
+        msg.setInnerboxlinkcolor(params.fields.link_color || "0000cc")
+        msg.setInnerboxbodytextcolor(params.fields.body_text_color || "333333")
+        if(params.fields.background_image
+        && params.fields.background_image.length == 24) {
+            msg.setCustombackgroundid(params.fields.background_image)
+        }
+
+        if(params.fields.wrapper_opacity
+        && !isNaN(parseInt(params.fields.wrapper_opacity))
+        && parseInt(params.fields.wrapper_opacity) >= 0
+        && parseInt(params.fields.wrapper_opacity) <= 255) {
+            msg.setWrapperopacity(parseInt(params.fields.wrapper_opacity))
+        }
+
+        if(params.fields.innerbox_opacity
+        && !isNaN(parseInt(params.fields.innerbox_opacity))
+        && parseInt(params.fields.innerbox_opacity) >= 0
+        && parseInt(params.fields.innerbox_opacity) <= 255) {
+            msg.setInnerboxopacity(parseInt(params.fields.innerbox_opacity))
+        }
+
+        msg.setHidebanner(params.checkboxes.hide_def_banner_check)
+        msg.setRepeatcustombackground(
+            params.checkboxes.background_repeat_check
+        )
+
+        let shownModulesString = ""
+        if(params.checkboxes.box_status_user_comments) {
+            shownModulesString += "c"
+        }
+        if(params.checkboxes.box_status_user_recent_activity) {
+            shownModulesString += "r"
+        }
+        if(params.checkboxes.box_status_user_hubber_links) {
+            shownModulesString += "o"
+        }
+        if(params.checkboxes.box_status_user_subscribers) {
+            shownModulesString += "s"
+            fetchesRequired++
+            this.getSubscribers(req, (data) => {
+                if(data) {
+                    data.slice(0,6).forEach(d => {
+                        let c = new customChannel.featuredChannel()
+                        c.setId(d.id)
+                        c.setName(d.name)
+                        msg.addSubscriber(c)
+                    })
+                }
+                fetchesCompleted++
+                if(fetchesCompleted == fetchesRequired) {
+                    t.applyCustomization(msg.serializeBinary(), res, req)
+                }
+            })
+        }
+        if(params.checkboxes.box_status_user_subscriptions) {
+            shownModulesString += "z"
+            fetchesRequired++
+            //req.withAvatars = true;
+            this.getSubscriptions(req, {
+                "set": function(a,b) {},
+                "send": function(data) {
+                    data.split("<entry>").slice(0,7).forEach(e => {
+                        if(e.includes("<feed")) return;
+                        let name = e.split("<yt:username>")[1]
+                                    .split("</yt:usernam")[0]
+                                    .split("&").join("")
+                                    .split(";").join("")
+                                    .split(":").join("")
+                        let id = e.split("<y9id>")[1].split("</y9id>")[0]
+                        let c = new customChannel.featuredChannel()
+                        c.setId(id)
+                        c.setName(name)
+                        msg.addSubscription(c)
+                    })
+                    fetchesCompleted++
+                    if(fetchesCompleted == fetchesRequired) {
+                        t.applyCustomization(msg.serializeBinary(), res, req)
+                    }
+                }
+            })
+        }
+        msg.setShownmodules(shownModulesString)
+
+        
+        let shownContentString = ""
+        if(params.checkboxes.display_uploads) {
+            shownContentString += "u"
+        }
+        if(params.checkboxes.display_favorites) {
+            shownContentString += "f"
+        }
+        if(params.checkboxes.display_playlists) {
+            shownContentString += "p"
+        }
+        if(params.checkboxes.display_all) {
+            shownContentString += "a"
+        }
+        msg.setShowncontent(shownContentString)
+        
+        msg.setEnableautoplay(params.checkboxes.enable_autoplay)
+
+        if(params.fields.default_view == "grid") {
+            msg.setDefaultgrid(true)
+        }
+        switch(params.fields.default_set || "") {
+            case "uploads": {
+                msg.setAltdefaultset(2)
+                break;
+            }
+            case "favorites": {
+                msg.setAltdefaultset(3)
+                break;
+            }
+        }
+
+        if(params.fields.featured_video_id == "OTHER111111") {
+            let altVideoId = false;
+            let vurl = params.fields.featured_video_url
+            if(vurl && vurl.includes("youtu.be/")) {
+                altVideoId = vurl.split("youtu.be/")[1]
+                                 .split("?")[0]
+                                 .split("#")[0];
+                altVideoId = altVideoId.substring(0,11)
+            } else if(vurl.includes("/watch") && vurl.includes("v=")) {
+                altVideoId = vurl.split("v=")[1].substring(0,11)
+            }
+            if(altVideoId) {
+                msg.setAltdefaultvidid(altVideoId)
+            }
+        }
+
+        if(fetchesCompleted == fetchesRequired) {
+            this.applyCustomization(msg.serializeBinary(), res, req)
+        }
+    },
+
+    "updateChannelDescription": function(req, description, id, callback) {
+        // craft description update proto
+        let root = new userMetadata.root()
+        let context = new userMetadata.root.contextType()
+        let client = new userMetadata.root.contextType.clientType()
+        client.setClientnumber(3)
+        client.setClientversion("21.16.256")
+        client.setOsname("Android")
+        client.setOsversion("14")
+        client.setAndroidsdkversion(34)
+        context.addClient(client)
+        root.addContext(context)
+
+        root.setBrowseid(id)
+
+        let upd = new userMetadata.root.channelAboutTab()
+        upd.setDescription(description)
+        root.addAbout(upd)
+        
+        let pbmsg = root.serializeBinary()
+
+        // send request
+        setupYouTube(pullDeviceId(req), (h) => {
+            h["Content-Type"] = "application/x-protobuf"
+            h["x-goog-api-format-version"] = "2"
+            let url = [
+                "https://youtubei.googleapis.com",
+                "/youtubei/v1/channel_edit",
+                "/update_channel_page_settings"
+            ].join("")
+            fetch(url, {
+                "method": "POST",
+                "headers": h,
+                "body": pbmsg
+            }).then(r => {
+                callback()
+            })
+        })
+    },
+
+    "applyCustomization": function(proto, res, req) {
+        //console.log(Buffer.from(proto).toString("base64"))
+        const identif = "-- x-yt2009-custom"
+        const warning = [
+            " -- channel customization code for yt2009"
+        ].join("")
+        this.openBrowseId(req, (id) => {
+            require("./yt2009channels").aboutChannel(id, (data) => {
+                // put customiation code to channel description
+                let description = data.description || ""
+                if(description
+                && description.includes(identif)) {
+                    let customizi = description.split(identif)[1]
+                                    .split("\n")[1];
+                    description = description.replace(customizi, "")
+                    let descriptiLine = description.split(identif)[1]
+                                        .split("\n")[0]
+                    description = description.replace(
+                        identif + descriptiLine, ""
+                    )
+                }
+                
+                description += identif + warning + "\n"
+                description += Buffer.from(proto).toString("base64").split("+").join("-")
+
+                // craft description update proto
+                this.updateChannelDescription(req, description, id, () => {
+                    setTimeout(() => {
+                        let ownUrl = [
+                            "/channel/" + id,
+                            "?resetcache=1",
+                            "&nc=" + Date.now()
+                        ].join("")
+                        res.redirect(ownUrl)
+                    }, 1000)
+                })
+            })
+        })
+    },
+
+    "getSubscribers": function(req, callback) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback([])
+            return;
+        }
+
+        this.openBrowseId(req, (id) => {
+            const tempBehalf = require("./proto/temp_behalfof_pb")
+            let pmsg = new tempBehalf.root()
+            let pimsg = new tempBehalf.behalf()
+            pimsg.setChannelid(id)
+            pimsg.setEmpty2("")
+            pmsg.addBeh(pimsg)
+            let behalfOf = Buffer.from(
+                pmsg.serializeBinary()
+            ).toString("base64")
+
+            setupYouTube(device, (h) => {
+                fetch(hostname + "/youtubei/v1/browse", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": JSON.stringify({
+                        "context": androidContext,
+                        "browseId": "FEsubscriber_list",
+                        "params": behalfOf
+                    })
+                }).then(r => {r.json().then(r => {
+                    let subList = []
+                    try {
+                        let a = r.contents.singleColumnBrowseResultsRenderer
+                                 .tabs[0].tabRenderer.content
+                                 .sectionListRenderer.contents
+                        a.forEach(b => {
+                            try {
+                                b = b.itemSectionRenderer.contents
+                                b.forEach(c => {
+                                    c = c.elementRenderer.newElement.type
+                                         .componentType.model
+                                         .subscriptionsChannelPageListItemModel
+                                         .channelListItemData
+                                    let userId = false;
+                                    try {
+                                        function put(browseEndpoint) {
+                                            if(browseEndpoint) {
+                                                let d = browseEndpoint
+                                                userId = d.browseId;
+                                            }
+                                        }
+                                        let command = c.command.innertubeCommand
+                                        if(command.commandExecutorCommand) {
+                                            command.commandExecutorCommand
+                                            .commands.forEach(d => {
+                                                if(d.browseEndpoint) {
+                                                    put(d.browseEndpoint)
+                                                }
+                                            })
+                                        } else if(command.browseEndpoint) {
+                                            put(command.browseEndpoint)
+                                        }
+                                        
+                                    }
+                                    catch(error){}
+                                    let name = c.channelName.content
+                                    if(userId) {
+                                        subList.push({
+                                            "id": userId,
+                                            "name": name
+                                        })
+                                    }
+                                })
+                            }
+                            catch(error) {}
+                        })
+                    }
+                    catch(error) {
+                        console.log("failed to pull subscribers list!", error)
+                    }
+                    
+
+                    callback(subList)
+                })})
+            }, req)
+        })
+    },
+
+    "applyProfileSetup": function(req, res) {
+        let delimiter = "═"
+        let whitelistedProperties = [
+            "website", "first-name", "last-name", "gender", "relationship",
+            "hometown", "current-city", "zip-code", "country", "occupations",
+            "companies", "schools", "interests", "fav-movies", "fav-music",
+            "fav-books", "channel-description", "pronouns"
+        ]
+        let data = {}
+        let raw = req.body.toString().split("&")
+        let propertyNames = {
+            "website": "Website",
+            "name": "Name",
+            "gender": "Gender",
+            "relationship": "Relationship",
+            "hometown": "Hometown",
+            "current-city": "City",
+            "country": "Country",
+            "zip-code": "Zip",
+            "occupations": "Occupation",
+            "companies": "Companies",
+            "schools": "Schools",
+            "interests": "Hobbies",
+            "fav-movies": "Movies",
+            "fav-music": "Music",
+            "fav-books": "Books",
+            "pronouns": "Pronouns"
+        }
+        let dropdownValues = {
+            "Gender": {
+                "m": "Male",
+                "f": "Female"
+            },
+            "Relationship": {
+                "s": "Single",
+                "t": "Taken",
+                "o": "Open"
+            },
+            "Country": {}
+        }
+        let countries = require("./geo/country-codes.json")
+        let reversedCountries = {}
+        for(let name in countries) {
+            reversedCountries[countries[name]] = name;
+        }
+        dropdownValues.Country = reversedCountries;
+
+        raw.forEach(p => {
+            let key = p.split("=")[0]
+            let value = decodeURIComponent(p.split("=")[1]).split("\r").join("")
+            if(whitelistedProperties.includes(key)) {
+                data[propertyNames[key] || key] = value;
+            }
+        })
+
+        /*if(data.country && data.country.length == 2
+        && reversedCountries[data.country]) {
+            data.country = reversedCountries[data.country]
+        }*/
+
+        for(let prop in dropdownValues) {
+            let value = data[prop]
+            //console.log(prop, value, dropdownValues[prop])
+            if(value && dropdownValues[prop][value]) {
+                data[prop] = dropdownValues[prop][value]
+            } else {
+                data[prop] = ""
+            }
+        }
+
+        if(data["first-name"] || data["last-name"]) {
+            data["Name"] = `${data["first-name"] || ""} ${data["last-name"] || ""}`
+            delete data["first-name"]
+            delete data["last-name"]
+        }
+
+        let completeDescription = ""
+        if(data["channel-description"]) {
+            completeDescription = data["channel-description"].split("+").join(" ")
+            delete data["channel-description"]
+        }
+        if(completeDescription.includes(delimiter)) {
+            // remove previous properties
+            try {
+                let part = completeDescription.split("\n\n" + delimiter + " ")[1]
+                           .split("\n\n")[0]
+                completeDescription = completeDescription.replace(
+                    "\n\n" + delimiter + " " + part, ""
+                )
+            }
+            catch(error){}
+        }
+
+        if(completeDescription.includes("-- x-yt2009-custom")) {
+            // has channel customization, put before
+            completeDescription = completeDescription.replace(
+                "\n\n-- x-yt2009-custom",
+                "\n\n//properties-insert\n\n-- x-yt2009-custom"
+            )
+        } else {
+            // put at the end
+            completeDescription += "\n\n//properties-insert"
+        }
+
+        // craft properties
+        let textData = []
+        for(let p in data) {
+            if(data[p] && data[p].length >= 1) {
+                textData.push(`${delimiter} ${p}: ${data[p]}`)
+            }
+        }
+        textData = textData.join("\n").split("+").join(" ")
+
+        completeDescription = completeDescription.replace(
+            "//properties-insert", textData
+        )
+
+        this.openBrowseId(req, (id) => {
+            this.updateChannelDescription(req, completeDescription, id, () => {
+                setTimeout(() => {
+                    res.redirect(`/channel/${id}?resetcache=1&nc=${Math.random()}`)
+                }, 250)
+            })
+        })
+    },
+
+    "getSubscriptionVideos": function(req, callback) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback([])
+            return;
+        }
+
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEsubscriptions"
+                })
+            }).then(r => {r.json().then(r => {
+                let vids = []
+                try {
+                    let a = r.contents.singleColumnBrowseResultsRenderer
+                             .tabs[0].tabRenderer.content
+                             .sectionListRenderer.contents
+                    a.forEach(b => {
+                        try {
+                            b = b.shelfRenderer.content.verticalListRenderer
+                                 .items
+                            b.forEach(c => {
+                                c = c.compactVideoRenderer //<3
+                                let authorId = c.shortBylineText.runs[0]
+                                                .navigationEndpoint
+                                                .browseEndpoint.browseId
+                                let upload = c.publishedTimeText.runs[0].text
+                                upload = upload.replace("Streamed ", "")
+                                               .replace("Premiered ", "")
+                                vids.push({
+                                    "id": c.videoId,
+                                    "author_name": c.shortBylineText
+                                                    .runs[0].text,
+                                    "title": c.title.runs[0].text,
+                                    "length": c.lengthText.runs[0].text,
+                                    "upload": upload,
+                                    "views": c.viewCountText.runs[0].text,
+                                    "author_url": "/channel/" + authorId,
+                                    "o": true
+                                })
+                            })
+                        }
+                        catch(error) {}
+                    })
+                }
+                catch(error) {
+                    console.log("failed to pull vid list!", error)
+                }
+
+                callback(vids)
+            })})
+        }, req)
+    },
+
+    "getNotifications": function(req, callback) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback([])
+            return;
+        }
+
+        let notificationList = []
+        let parsedNotifications = []
+
+        let neededVideos = []
+
+        function notifId(n) {
+            return crypto.createHash("sha1").update(
+                `${n.from}${n.type}${n.commentContent||n.id||n.title||""}`
+            ).digest("hex").substring(0, 16)
+        }
+
+        function parseFromItemSection(i) {
+            try {
+                i = i.itemSectionRenderer.contents
+                i.forEach(n => {
+                    try {
+                        let z = n.elementRenderer.newElement.type
+                                 .componentType.model;
+                        notificationList.push(
+                            z.expandableInboxNotificationModel
+                         || z.inboxNotificationModel
+                        )
+                    }
+                    catch(error) {
+                        console.log(error)
+                    }
+                })
+            }
+            catch(error){
+                console.log(error)
+            }
+        }
+
+        function parseExpandableNotification(n) {
+            let h = n.header;
+            let ns = n.notifications;
+
+            let person = h.metadata.header.content;
+            let type = h.metadata.shortMessageFormatted
+                        .content.toLowerCase();
+            let avatar = null;
+            try {
+                avatar = utils.saveAvatar(h.avatar.image.sources[0].url)
+                avatar = "/avatar_wait?av=" + avatar
+            }
+            catch(error){}
+            let parsedType = ""
+            if(type.includes("uploaded")) {
+                parsedType = "upload"
+            }
+
+            ns.forEach(a => {
+                if(parsedType == "upload") {
+                    let title = a.metadata.shortMessageFormatted
+                                 .content;
+                    let date = a.metadata.sentTimeText
+                    let command = a.onTap.innertubeCommand
+                    let videoId = ""
+                    if(command.watchEndpoint) {
+                        videoId = command.watchEndpoint.videoId;
+                    } else if(command.reelWatchEndpoint) {
+                        videoId = command.reelWatchEndpoint.videoId;
+                    }
+                    if(!videoId) return;
+                    let time = new Date(
+                        utils.relativeToAbsoluteApprox(date)
+                    ).getTime()
+                    let notif = {
+                        "from": person,
+                        "type": "upload",
+                        "date": date,
+                        "title": utils.xss(title),
+                        "id": videoId,
+                        "time": time,
+                        "thumbnail": avatar,
+                        "p": true,
+                        "needed": true
+                    }
+                    notif.notificationId = notifId(notif);
+                    parsedNotifications.push(notif)
+                }
+            })
+        }
+
+        function parseStandardNotification(n) {
+            n = n.inboxNotification
+            if(!n) return;
+            let person = utils.xss(n.metadata.header.content);
+            let type = n.metadata.shortMessageFormatted.content.toLowerCase();
+            let c = n.metadata.shortMessageFormatted.content;
+            let sentTime = n.metadata.sentTimeText
+            let avatar = null;
+            try {
+                avatar = utils.saveAvatar(n.avatar.image.sources[0].url)
+                avatar = "/avatar_wait?av=" + avatar
+            }
+            catch(error){}
+            let parsedType = ""
+            if(type.includes("upload")) {
+                parsedType = "upload"
+            } else if(type.includes("live now")) {
+                parsedType = "live"
+            } else if(type.includes("comment")) {
+                parsedType = "comment"
+            } else if(type.includes("replied")) {
+                parsedType = "reply"
+            } else if(person.toLowerCase().includes("like")) {
+                parsedType = "like"
+            } else if(person.toLowerCase().includes("❤")) {
+                parsedType = "heart"
+            }
+
+            if(!parsedType) return;
+            
+            let content = ""
+            switch(parsedType) {
+                case "upload": {
+                    let title = n.metadata.shortMessageFormatted
+                                 .content;
+                    title = title.split("Uploaded")
+                    title.shift()
+                    title = title.join("Uploaded")
+                    if(title.startsWith(": ")) {
+                        title = title.replace(": ", "")
+                    }
+                    let date = n.metadata.sentTimeText
+                    let command = n.onTap.innertubeCommand
+                    let videoId = ""
+                    if(command.watchEndpoint) {
+                        videoId = command.watchEndpoint.videoId;
+                    } else if(command.reelWatchEndpoint) {
+                        videoId = command.reelWatchEndpoint.videoId;
+                    }
+                    if(!videoId) return;
+                    let time = new Date(
+                        utils.relativeToAbsoluteApprox(date)
+                    ).getTime()
+                    let notif = {
+                        "from": person,
+                        "type": "upload",
+                        "date": date,
+                        "title": utils.xss(title),
+                        "id": videoId,
+                        "time": time,
+                        "thumbnail": avatar,
+                        "p": true
+                    }
+                    notif.notificationId = notifId(notif)
+                    parsedNotifications.push(notif)
+                    return;
+                }
+                case "live": {
+                    break;
+                }
+                case "comment": {
+                    content = c.split("Comment")
+                    content.shift()
+                    content = content.join("Comment")
+                    if(content.includes("\"")) {
+                        content = content.split("\"")
+                        content.shift()
+                        content.pop()
+                        content = content.join("\"")
+                    }
+                    break;
+                }
+                case "reply": {
+                    content = c.split("Replied")
+                    content.shift()
+                    content = content.join("Replied")
+                    if(content.includes("\"")) {
+                        content = content.split("\"")
+                        content.shift()
+                        content.pop()
+                        content = content.join("\"")
+                    }
+                    break;
+                }
+                case "like": {
+                    let videoId = n.inboxNotificationThumbnail
+                                   .thumbnail.image.sources[0].url;
+                    videoId = videoId.split("vi/")[1].substring(0,11)
+                    content = [
+                        "Congratulations! Your comment got a like:",
+                        n.metadata.shortMessageFormatted.content
+                    ].join(" ")
+                    avatar = "/assets/site-assets/comment-notification-star.png"
+                    let notif = {
+                        "id": videoId,
+                        "from": "Comment Like",
+                        "content": utils.xss(content),
+                        "needed": true,
+                        "p": true,
+                        "date": sentTime,
+                        "thumbnail": avatar,
+                        "type": "message",
+                        "additionalHeader": "has_video_data",
+                        "parsableType": "comment_like"
+                    }
+                    notif.notificationId = notifId(notif)
+                    parsedNotifications.push(notif)
+                    return;
+                }
+                case "heart": {
+                    let videoId = n.inboxNotificationThumbnail
+                                   .thumbnail.image.sources[0].url;
+                    videoId = videoId.split("vi/")[1].substring(0,11)
+                    let content = [
+                        n.metadata.header.content,
+                        n.metadata.shortMessageFormatted.content
+                    ].join(": ")
+                    if(n.metadata.header.content.includes("@")) {
+                        person = n.metadata.header.content
+                                  .split("@")[1]
+                                  .split(" ")[0]
+                                  .split("!")[0]
+                    } else {
+                        person = "Comment Heart"
+                    }
+                    let notif = {
+                        "id": videoId,
+                        "from": person,
+                        "content": utils.xss(content),
+                        "needed": true,
+                        "p": true,
+                        "date": sentTime,
+                        "thumbnail": avatar,
+                        "type": "message",
+                        "additionalHeader": "has_video_data",
+                        "parsableType": "comment_heart"
+                    }
+                    notif.notificationId = notifId(notif)
+                    parsedNotifications.push(notif)
+                    return;
+                }
+            }
+
+            let videoId = n.inboxNotificationThumbnail
+                           .thumbnail.image.sources[0].url;
+            if(!videoId) return;
+            videoId = videoId.split("vi/")[1].substring(0,11)
+
+            if(!neededVideos.includes(videoId)) {
+                neededVideos.push(videoId)
+            }
+
+            let notif = {
+                "from": person.replace("@", ""),
+                "thumbnail": avatar,
+                "commentContent": utils.xss(content),
+                "type": parsedType,
+                "date": sentTime,
+                "id": videoId,
+                "needed": true,
+                "time": new Date(
+                    utils.relativeToAbsoluteApprox(sentTime)
+                ).getTime(),
+                "p": true
+            }
+            notif.notificationId = notifId(notif)
+            parsedNotifications.push(notif)
+        }
+
+        function finalizeNotifications() {
+            function sendNotifications() {
+                parsedNotifications = parsedNotifications.sort((a,b) => {
+                    return b.time - a.time
+                })
+                callback(parsedNotifications)
+            }
+
+            if(neededVideos.length >= 1
+            && config.data_api_key) {
+                utils.dataApiBulk(neededVideos, [
+                    "title", "description"
+                ], (data) => {
+                    let copy = parsedNotifications;
+                    for(let v in data) {
+                        copy = parsedNotifications.map((a) => {
+                            if(a.needed && a.id == v) {
+                                a.title = utils.xss(
+                                    data[v].title || ""
+                                )
+                                a.description = utils.xss(
+                                    data[v].description || ""
+                                )
+                                a.needed = null;
+                                delete a.needed;
+                            }
+                            return a;
+                        })
+                    }
+                    parsedNotifications = copy;
+                    sendNotifications()
+                })
+            } else {
+                sendNotifications()
+            }
+        }
+
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEnotifications_inbox"
+                })
+            }).then(r => {r.json().then(r => {
+                if((r.error && r.error.message
+                && r.error.message.includes("convert server response"))
+                || req.query.test_force_proto == 1) {
+                    if(config.env == "dev") {
+                        console.log("pchelper notifications fail, retry proto")
+                    }
+                    // needs proto retry
+                    this.notificationsProto(req, (n) => {
+                        parsedNotifications = n.parsedNotifications
+                        neededVideos = n.neededVideos
+                        finalizeNotifications()
+                    })
+                    return;
+                }
+                try {
+                    if(!r.contents && config.dev_report_mh_fail_notif) {
+                        fs.writeFileSync(
+                            "../media/dev_mobilehelper_fail_n" + Date.now(),
+                            JSON.stringify(r)
+                        )
+                    }
+                    r = r.contents.singleColumnBrowseResultsRenderer.tabs[0]
+                        .tabRenderer.content.sectionListRenderer.contents
+                    r = r.filter(s => {
+                        return s && (JSON.stringify(s).includes(
+                            "expandableInboxNotificationModel"
+                        ) || JSON.stringify(s).includes(
+                            "inboxNotification"
+                        ))
+                    })
+                    r.forEach(i => {
+                        parseFromItemSection(i)
+                    })
+                }
+                catch(error) {
+                    console.log(error)
+                    callback([])
+                }
+
+                notificationList.forEach(n => {
+                    if(!n) return;
+                    if(n.notifications) {
+                        // expandable notifications
+                        parseExpandableNotification(n)
+                    } else {
+                        parseStandardNotification(n)
+                    }
+                })
+                
+                finalizeNotifications()
+            })})
+        }, req)
+    },
+
+    "notificationsProtoShortcut": function(f) {
+        // protoShortcut -- application-specific and a **shortcut**
+        // way of extraction!! will skip a few things!!!
+        // we just hope that the googlys will fix their jsons 
+        // (for users with new messages?) and this can be removed shortly
+        function notifId(n) {
+            return crypto.createHash("sha1").update(
+                `${n.from}${n.type}${n.commentContent||n.id||n.title||""}`
+            ).digest("hex").substring(0, 16)
+        }
+
+        let neededVideos = []
+        let parsedNotifications = []
+        let notifs = f.split("*inbox_notification.eml") // ignore expandable
+        notifs.shift()
+        notifs.forEach(n => {
+            let parsedType = ""
+            let notificationEntry = {}
+            if(n.includes("Uploaded: ")) {
+                parsedType = "upload"
+            } else if(n.includes("Replied: ")) {
+                parsedType = "reply"
+            } else if(n.includes("Commented: ")) {
+                parsedType = "comment"
+            } else if(n.includes("You got a like")) {
+                parsedType = "like"
+            }
+
+            let sentDate = ""
+            let lines = n.split("\n")
+            function getSentDate() {
+                let possibilities = [
+                    "second ago",
+                    "seconds ago",
+                    "minute ago",
+                    "minutes ago",
+                    "hour ago",
+                    "hours ago",
+                    "day ago",
+                    "days ago",
+                    "week ago",
+                    "weeks ago",
+                    "month ago",
+                    "months ago",
+                    "year ago",
+                    "years ago"
+                ]
+                let possibilitiesLine = ""
+                possibilities.forEach(p => {
+                    let line = lines.filter(s => {
+                        return s.includes(p)
+                    })
+                    if(line[0]) {
+                        possibilitiesLine = line[0].split(" ago")[0] + " ago"
+                        possibilitiesLine = possibilitiesLine.split("")
+                        while(possibilitiesLine[0]
+                        && possibilitiesLine[0].charCodeAt(0) < 48) {
+                            possibilitiesLine.shift()
+                        }
+                        possibilitiesLine = possibilitiesLine.join("")
+                    }
+                })
+                sentDate = possibilitiesLine
+            }
+
+            let sender = ""
+            function getSender() {
+                let isDiscarded = false;
+                let line = lines.filter(s => {
+                    return ((s.includes("Roboto-Bold")
+                        && s.includes("2\x11"))
+                        || (s.includes("Roboto-Bold")
+                        && lines[lines.indexOf(s) - 1].includes("2\x11")))
+                })
+                if(line[0]) {
+                    line = line[0]
+                    if(!line.includes("2\x11")) {
+                        let i = lines.indexOf(line)
+                        line = lines[i - 1] // should be on line before
+                        if(!line.includes("2\x11")) {
+                            // parsing error, discard
+                            isDiscarded = true;
+                        }
+                    }
+                    if(isDiscarded) return ""
+                    line = line.split("")
+                    while(line[0] && line[0].charCodeAt(0) < 48) {
+                        line.shift()
+                    }
+                    line = line.join("").split("2\x11")[0]
+                    sender = line;
+                }
+            }
+
+            let senderAvatar = ""
+            function getSenderAvatar() {
+                let line = lines.filter(s => {
+                    return (s.includes("yt3.ggpht.com")
+                        || s.includes("googleusercontent.com"))
+                })
+                if(line[0]) {
+                    line = "http" + line[0].split("http")[1].split(" ")[0]
+                    senderAvatar = line;
+                }
+            }
+
+            let videoId = ""
+            function getVideoId() {
+                let line = lines.filter(s => {
+                    return ((s.includes("vi_webp/")
+                        || s.includes("vi/"))
+                        && (s.includes("default.")
+                        || s.includes("frame0.")))
+                })
+                if(line[0]) {
+                    line = line[0].split(/vi\_webp|vi/).filter(s => {
+                        return s.includes("default.") || s.includes("frame0.")
+                    })[0].split("/")[1]
+                    if(line.length == 11) {
+                        videoId = line
+                        if(!neededVideos.includes(videoId)) {
+                            neededVideos.push(videoId)
+                        }
+                    }
+                }
+            }
+
+            function fillAsCommentNotification(type, content) {
+                getSentDate()
+                getVideoId()
+                getSender()
+                getSenderAvatar()
+                let time = new Date(
+                    utils.relativeToAbsoluteApprox(sentDate)
+                ).getTime()
+                notificationEntry = {
+                    "from": sender.replace("@", ""),
+                    "thumbnail": senderAvatar,
+                    "commentContent": utils.xss(content),
+                    "type": type,
+                    "date": sentDate,
+                    "id": videoId,
+                    "time": time,
+                    "needed": true,
+                    "p": true
+                }
+                notificationEntry.notificationId = notifId(notificationEntry)
+                parsedNotifications.push(notificationEntry)
+            }
+
+            switch(parsedType) {
+                case "upload": {
+                    let title = n.split("Uploaded: ")[1].split("\x04")[0]
+                    if(title.endsWith("2")) {
+                        title = title.split("2")
+                        title.pop()
+                        title = title.join("2")
+                    }
+                    getSentDate()
+                    getSender()
+                    getSenderAvatar()
+                    getVideoId()
+                    if(title && sentDate && sender && senderAvatar && videoId) {
+                        let time = new Date(
+                            utils.relativeToAbsoluteApprox(sentDate)
+                        ).getTime()
+                        notificationEntry = {
+                            "from": sender,
+                            "type": "upload",
+                            "date": sentDate,
+                            "title": utils.xss(title),
+                            "id": videoId,
+                            "time": time,
+                            "thumbnail": senderAvatar,
+                            "p": true
+                        }
+                        notificationEntry.notificationId = notifId(
+                            notificationEntry
+                        )
+                        parsedNotifications.push(notificationEntry)
+                    }
+                    break;
+                }
+                case "comment": {
+                    let l = lines.filter(s => {
+                        return s.includes("Commented: ")
+                    })[0].split("Commented: ")[1]
+                    l = l.split("2\x04")[0]
+                    if(l.startsWith("\"")) {
+                        l = l.split("\"")
+                        l.shift()
+                        l.pop()
+                        l = l.join("\"")
+                    }
+                    let content = l;
+                    fillAsCommentNotification("comment", content)
+                    break;
+                }
+                case "reply": {
+                    let l = lines.filter(s => {
+                        return s.includes("Replied: ")
+                    })[0].split("Replied: ")[1]
+                    l = l.split("2\x04")[0]
+                    if(l.startsWith("\"")) {
+                        l = l.split("\"")
+                        l.shift()
+                        l.pop()
+                        l = l.join("\"")
+                    }
+                    let content = l;
+                    fillAsCommentNotification("comment", content)
+                    break;
+                }
+                case "like": {
+                    let l = lines[lines.indexOf(lines.filter(s => {
+                        return s.includes("You got a like")
+                    })[0]) - 1]
+                    let content = l.split("2\x04")[0].split("\"")
+                    content.shift()
+                    content.pop()
+                    content = content.join("\"")
+                    getSentDate()
+                    getVideoId()
+                    let t = "/assets/site-assets/comment-notification-star.png"
+                    if(content && sentDate && videoId) {
+                        let time = new Date(
+                            utils.relativeToAbsoluteApprox(sentDate)
+                        ).getTime()
+                        content = [
+                            "Congratulations! Your comment got a like:",
+                            content
+                        ].join(" ")
+                        notificationEntry = {
+                            "id": videoId,
+                            "from": "Comment Like",
+                            "content": utils.xss(content),
+                            "needed": true,
+                            "p": true,
+                            "date": sentDate,
+                            "time": time,
+                            "thumbnail": t,
+                            "type": "message",
+                            "additionalHeader": "has_video_data",
+                            "parsableType": "comment_like"
+                        }
+                        notificationEntry.notificationId = notifId(
+                            notificationEntry
+                        )
+                        parsedNotifications.push(notificationEntry)
+                    }
+                    break;
+                }
+            }
+        })
+
+        return {
+            "parsedNotifications": parsedNotifications,
+            "neededVideos": neededVideos
+        }
+    },
+
+    "notificationsProto": function(req, callback) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback([])
+            return;
+        }
+        setupYouTube(device, (h) => {
+            let url = [
+                "https://youtubei.googleapis.com/youtubei/v1/browse",
+                "?alt=proto&fields=contents"
+            ].join("")
+            fetch(url, {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEnotifications_inbox"
+                })
+            }).then(r => {r.text().then(r => {
+                let notifications = {
+                    "parsedNotifications": [], "neededVideos": []
+                }
+                try {
+                    notifications = this.notificationsProtoShortcut(r)
+                }
+                catch(error) {
+                    console.log(error)
+                }
+
+                callback(notifications)
+            })})
+        }, req)
+    },
+
+    "channelForPolls": function(req, res) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]
+        || !req.headers
+        || !req.headers.source) {
+            res.sendStatus(400)
+            return;
+        }
+
+        require("./yt2009channels").get_id(req.headers.source, (uid) => {
+            if(!uid) {
+                res.sendStatus(400)
+                return;
+            }
+            let continuation = new browseNavigation.root()
+            let navi = new browseNavigation.root.browseNavigation()
+            navi.setBrowseid(uid)
+            navi.setParams("EgVwb3N0cw%3D%3D")
+            continuation.setMsg(navi)
+            continuation = Buffer.from(continuation.serializeBinary())
+
+            let root = new customizableRequest.root()
+            let context = new customizableRequest.root.contextType()
+            let client = new customizableRequest.root.contextType.clientType()
+            client.setClientnumber(3)
+            client.setClientversion("21.16")
+            client.setD(1)
+            context.addClient(client)
+            root.addContext(context)
+            root.setContinuation(
+                encodeURIComponent(continuation.toString("base64"))
+            )
+            let pbmsg = Buffer.from(root.serializeBinary())
+
+            setupYouTube(device, (h) => {
+                h["Content-Type"] = "application/x-protobuf"
+                h["x-goog-api-format-version"] = "2"
+                fetch("https://youtubei.googleapis.com/youtubei/v1/browse?alt=json", {
+                    "method": "POST",
+                    "headers": h,
+                    "body": pbmsg
+                }).then(r => {r.json().then(r => {
+                    let outputData = {}
+
+                    let c = []
+                    c = r.continuationContents.sectionListContinuation
+                         .contents[0].itemSectionRenderer.contents;
+                    c = c.filter(s => {
+                        return JSON.stringify(s).includes("pollPostRootModel")
+                    }).map(s => {
+                        try {
+                            return s.elementRenderer.newElement.type
+                                    .componentType.model.pollPostRootModel
+                                    .data.pollAttachment.pollAttachmentViewModel
+                                    .choices;
+                        }
+                        catch(error) {return null;}
+                    }).filter(s => {return !!s})
+                    c.forEach(pollChoices => {
+                        let postId = false;
+                        let choices = []
+                        pollChoices.forEach(choice => {
+                            choice = choice.pollChoiceViewModel
+                            postId = commentActions.root.deserializeBinary(
+                                choice.selectedPollAction.split("%")[0]
+                            ).toObject().id
+
+                            if(userdata[device].commentActions
+                            && userdata[device].commentActions[postId] !== null
+                            && userdata[device].commentActions[postId] !== undefined) {
+                                let action = userdata[device]
+                                             .commentActions[postId]
+                                choice.picked = (action == choice.id)
+                            }
+
+                            choices.push(choice)
+                        })
+                        outputData[postId] = choices
+                    })
+
+                    let translation = templates.pollChoiceTranslations(req)
+                    outputData.languageTranslations = translation;
+
+                    if(req.query.format !== "html") {
+                        res.send(outputData)
+                    } else {
+                        let prebuiltHTML = []
+                        for(let p in outputData) {
+                            prebuiltHTML.push([
+                                "POLL-DATA-" + p,
+                                templates.pollChoiceRender(outputData[p], req)
+                            ].join("========="))
+                        }
+                        res.send(prebuiltHTML.join("\n"))
+                    }
+                    
+                })})
+            }, req)
+        })
+    },
+
+    "performCommentAction": function(req, res) {
+        let device = pullDeviceId(req);
+        if(!req.body || !req.body.toString
+        || !userdata[device]) {
+            res.sendStatus(400)
+            return;
+        }
+        // write action to pchelper userdata
+        let actionToken = req.body.toString()
+        let actionTokenDeserialized = {}
+        try {
+            actionTokenDeserialized = commentActions.root.deserializeBinary(
+                actionToken.split("%")[0]
+            ).toObject()
+        }
+        catch(error) {}
+        if(!actionTokenDeserialized.id) {
+            res.sendStatus(500)
+            return;
+        }
+        if(!userdata[device].commentActions) {
+            userdata[device].commentActions = {}
+        }
+        let postId = actionTokenDeserialized.id
+        if(actionTokenDeserialized.pollselectionid !== null
+        && actionTokenDeserialized.pollselectionid !== undefined
+        && !actionTokenDeserialized.videoid) {
+            // channel poll
+            let selectId = actionTokenDeserialized.pollselectionid
+            userdata[device].commentActions[postId] = selectId
+        } else if(actionTokenDeserialized.videoid !== null
+        && actionTokenDeserialized.videoid !== undefined
+        && postId) {
+            // comment like/dislike
+            let selectId = actionTokenDeserialized.action
+            userdata[device].commentActions[postId] = selectId
+        }
+        fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+        // send to youtube
+        setupYouTube(device, (h) => {
+            let url = [
+                "https://youtubei.googleapis.com",
+                "/youtubei/v1/comment/perform_comment_action",
+                "?prettyPrint=false"
+            ].join("")
+            fetch(url, {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "actions": [actionToken]
+                })
+            }).then(r => {
+                res.status(r.status).send("innertube_response=" + r.status)
+            })
+        }, req)
+    },
+
+    "openInsightRequest": function(
+        req, endpoint, params, callback, requireFullResponse,
+        timelyChip
+    ) {
+        const timelyChipReadout = {
+            "whole": 1,
+            "week": 6,
+            "28days": 7,
+            "90days": 13,
+            "365days": 14,
+            "thisMonth": 12,
+            "lastMonth": 22,
+            "twoMonthsPrior": 23,
+            "yearBefore": 15,
+            "thisYear": 16
+        }
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        let root = new customizableRequest.root()
+        let context = new customizableRequest.root.contextType()
+        let client = new customizableRequest.root.contextType.clientType()
+        client.setClientnumber(14) // ANDROID_CREATOR
+        client.setClientversion("25.49.100")
+        context.addClient(client)
+        root.addContext(context)
+        if(params.browseId) {
+            root.setBrowseid(params.browseId)
+        }
+        if(params.params) {
+            root.setParams(params.params)
+        }
+        if(params.continuation) {
+            root.setContinuation(params.continuation)
+        }
+        if(params.creatorQuery) {
+            root.setCreatorquery(params.creatorQuery)
+        }
+        if(timelyChip) {
+            let chip = new creatorRequestSpecifics.creatorChipConfig()
+            let chipMsg = new creatorRequestSpecifics.chipRender()
+            let chipContent = new creatorRequestSpecifics.chipRender.contents()
+            chipContent.setRelcurrenttime(Math.floor(Date.now() / 1000))
+            let crun = new creatorRequestSpecifics.chipRender.run()
+            if(params.ownChannelId) {
+                crun.setChannelid(params.ownChannelId)
+            } else if(params.videoId) {
+                crun.setVideoid(params.videoId)
+            }
+            chipContent.setChannelid(crun)
+            chipContent.setTimeid(
+                timelyChipReadout[timelyChip] || timelyChip || 7
+            )
+            chipMsg.setContent(chipContent)
+            chip.setChip(chipMsg)
+            root.setChipconfig(chip)
+        }
+        root.setNavigationtype(0) // "BROWSE_NAVIGATION_TYPE_REPLACE_ALL"
+        let pbmsg = Buffer.from(root.serializeBinary())
+        setupYouTube(device, (h) => {
+            let url = [
+                "https://youtubei.googleapis.com/youtubei/v1/" + endpoint,
+                "?prettyPrint=false&alt=json",
+                (!requireFullResponse ? "&fields=contents" : ""),
+            ].join("")
+            h["Content-Type"] = "application/x-protobuf"
+            h["x-goog-api-format-version"] = "2"
+            fetch(url, {
+                "method": "POST",
+                "headers": h,
+                "body": pbmsg
+            }).then(r => {r.json().then(r => {
+                callback(r)
+            })})
+        }, req)
+    },
+
+    "openDatasyncId": function(req, callback) {
+		let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            callback(false)
+            return;
+        }
+        if(datasyncIdCaching[device] && !req.noCache) {
+            callback(datasyncIdCaching[device])
+            return;
+        }
+		refreshTube(device, () => {
+            pullAllYouTubeAccounts(userdata[device], (data) => {
+                let datasyncId = false;
+                data.forEach(a => {
+                    if(a.selected) {
+                        datasyncId = a.datasyncId
+                    }
+                })
+                datasyncIdCaching[device] = datasyncId
+                setTimeout(() => {
+                    datasyncIdCaching[device] = null;
+                    delete datasyncIdCaching[device]
+                }, 1000 * 60 * 3)
+                callback(datasyncId)
+            })
+        })
+	},
+
+    "openRequestTest": function(req, callbac) {
+        let device = pullDeviceId(req);
+        if(!req.body || !req.body.toString
+        || !userdata[device]) {
+            res.sendStatus(400)
+            return;
+        }
+        let alt = req.query.alt || "json"
+        let domain = "www.youtube.com"
+        if(alt !== "json") {
+            domain = "youtubei.googleapis.com"
+        }
+        let endpoint = req.query.endpoint || "browse"
+        setupYouTube(device, (h) => {
+            fetch("https://"+ domain +"/youtubei/v1/" + endpoint + "?fields=contents&alt=" + alt, {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": req.query.browse_id || "FEnotifications_inbox",
+                    "params": req.query.params || null
+                })
+            }).then(r => {r.buffer().then(r => {
+                callbac(r)
+            })})
+        }, req)
+    },
+
+    "commentRate": function(req, res) {
+        let commentId = req.headers.comment
+        let videoId = req.headers.source.split("v=")[1]
+                         .split("&")[0]
+                         .substring(0,11);
+        let initial = parseInt(req.headers.initial)
+        if(isNaN(initial) || videoId.length !== 11) {
+            res.sendStatus(400)
+            return;
+        }
+        let actionNumber = req.headers.rating == "dislike"
+                         ? 4 : 5 // default like (5)
+        let action = new commentActions.root()
+        action.setAction(actionNumber)
+        if(req.headers.rating == "dislike") {
+            action.setA(2)
+        }
+        action.setId(commentId)
+        action.setVideoid(videoId)
+        action = utils.base64toUrl(
+            Buffer.from(action.serializeBinary()
+        ).toString("base64"))
+        req.body = action;
+        req.body.toString = function() {
+            return action;
+        }
+        this.performCommentAction(req, {
+            "sendStatus": function(status) {
+                res.sendStatus(status)
+            },
+            "status": function(s) {
+                res.status(s)
+                if(s >= 400) {
+                    // fail
+                    res.send("")
+                } else {
+                    // success
+                    if(actionNumber == 5) {
+                        // liked
+                        res.send("rating:" + (initial + 1))
+                    } else {
+                        // disliked
+                        res.send("rating:" + (initial - 1))
+                    }
+                }
+                return {"send": function(z) {}}
+            },
+            "send": (z) => {}
+        })
+    },
+
+    "getCommentActions": function(req) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            return false;
+        }
+        return userdata[device].commentActions
+    },
+
+    "commentReply": function(videoId, ogCommentId, content, req, callback) {
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            callback({"r": false})
+            return;
+        }
+        if(content && content.startsWith("{")) {
+            try {
+                content = JSON.parse(content).comment;
+            }
+            catch(error){}
+        }
+        let r = new commentActions.create_comment_reply()
+        r.setVideoid(videoId)
+        r.setCommentid(ogCommentId)
+        r = utils.base64toUrl(
+            Buffer.from(r.serializeBinary()
+        ).toString("base64"))
+        setupYouTube(device, (h) => {
+            fetch("https://youtubei.googleapis.com/youtubei/v1/comment/create_comment_reply", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "createReplyParams": r,
+                    "commentText": content
+                })
+            }).then(r => {r.json().then(r => {
+                let commentId = ""
+                try {
+                    commentId = r.contents.commentRenderer.commentId
+                }
+                catch(error){}
+                callback({"r": true, "c": content, "i": commentId})
+            })})
+        }, req)
+    },
+
+    "getMessagingInviteLink": function(req, callback) {
+        // broken: waiting for yt to fix this feature
+
+        let device = pullDeviceId(req);
+        if(!userdata[device]) {
+            res.sendStatus(400)
+            return;
+        }
+
+        let root = new customizableRequest.root()
+        let context = new customizableRequest.root.contextType()
+        let client = new customizableRequest.root.contextType.clientType()
+        client.setClientnumber(3)
+        client.setClientversion("21.16")
+        client.setD(1)
+        context.addClient(client)
+        root.addContext(context)
+        root.setBrowseid("igICCAE%3D")
+        let pbmsg = Buffer.from(root.serializeBinary())
+
+        setupYouTube(device, (h) => {
+            h["Content-Type"] = "application/x-protobuf"
+            h["x-goog-api-format-version"] = "2"
+            fetch(hostname+"/youtubei/v1/share/get_share_panel", {
+                "method": "POST",
+                "headers": h,
+                "body": pbmsg
+            }).then(r => {r.json().then(r => {
+                try {
+                    let s = r.contents.unifiedSharePanelRenderer.contents[0]
+                             .thirdPartyNetworkSection.shareTargets[0]
+                             .shareTargetServiceUpdateRenderer.serviceEndpoint
+                             .sendShareExternallyEndpoint
+                             .sendShareResponseNoConversation.navigationEndpoint
+                             .copyTextEndpoint.text
+                    if(s.includes("/sharing/invite/")) {
+                        callback(
+                            "https://youtube.com/sharing/invite/" +
+                            s.split("sharing/invite/")[1]
+                        )
+                    }
+                }
+                catch(error) {
+                    let s = JSON.stringify(r)
+                    if(s.includes("/sharing/invite/")) {
+                        callback(
+                            "https://youtube.com/sharing/invite/" +
+                            s.split("sharing/invite/")[1]
+                             .split("\"")[0].split("'")[0]
+                        )
+                    } else {
+                        callback(false)
+                    }
+                }
+            })})
+        }, req)
+    },
+
+    "requestStatsUrl": function(req, url) {
+        let device = pullDeviceId(req);
+        if(!userdata[device] || !url || !url.includes("api/stats/")) {
+            return;
+        }
+
+        setupYouTube(device, (h) => {
+            this.openDatasyncId(req, (datasyncId) => {
+                h["x-goog-datasync-id"] = datasyncId
+                h["x-goog-request-time"] = Date.now()
+                h["x-goog-event-time"] = req.query.rt || Date.now()
+                if(yt2009exports.read().youtubeIp) {
+                    h["host"] = "www.youtube.com"
+                    let req = https.request({
+                        "host": yt2009exports.read().youtubeIp,
+                        "port": 443,
+                        "servername": "www.youtube.com",
+                        "headers": h,
+                        "path": "/" + url.split("youtube.com/")[1]
+                    }, (res) => {});
+                    req.end();
+                    return;
+                }
+                fetch(url, {
+                    "method": "POST",
+                    "headers": h,
+                    "body": null
+                }).then(r => {})
+            })
+        }, req)
+    },
+
+    "requestWatchHistory": function(req, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device]) {
+            res.sendStatus(400);
+            return;
+        }
+        let continuation = new browseNavigation.root()
+        let navi = new browseNavigation.root.browseNavigation()
+        navi.setBrowseid("FEhistory")
+        continuation.setMsg(navi)
+        continuation = utils.base64toUrl(
+            Buffer.from(continuation.serializeBinary()).toString("base64")
+        )
+        if(req.query.continuation) {
+            continuation = req.query.continuation
+        }
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse?fields=continuationContents", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "continuation": continuation
+                })
+            }).then(r => {r.json().then(r => {
+                if(req.raw) {
+                    callback(r)
+                    return;
+                }
+                try {
+                    let videos = []
+                    let conts = r.continuationContents
+                                 .sectionListContinuation
+                                 .continuations
+                    r = r.continuationContents.sectionListContinuation.contents
+                    r.forEach(section => {
+                        if(section.itemSectionRenderer
+                        && section.itemSectionRenderer.contents) {
+                            section = section.itemSectionRenderer.contents
+                        }
+                        if(section.forEach) {
+                        section.forEach(v => {if(v.compactVideoRenderer) {
+                                v = v.compactVideoRenderer
+                                let id = v.videoId;
+                                let views = "";
+                                if(v.viewCountText && v.viewCountText.runs) {
+                                    views = v.viewCountText.runs[0].text
+                                }
+                                if(views) {
+                                    try {
+                                        if(views.toLowerCase().includes("no ")) {
+                                            views = 0;
+                                        }
+                                    }
+                                    catch(error){}
+                                }
+                                let title = false;
+                                if(v.title && v.title.runs) {
+                                    title = v.title.runs[0].text
+                                }
+                                let removeToken = false;
+                                try {
+                                    let rm = v.menu.menuRenderer.items.filter(s => {
+                                        return (
+                                            s
+                                         && s.menuServiceItemRenderer
+                                         && s.menuServiceItemRenderer.icon
+                                         && s.menuServiceItemRenderer
+                                             .icon.iconType == "REMOVE"
+                                        )
+                                    })[0].menuServiceItemRenderer
+                                    removeToken = rm.serviceEndpoint
+                                                    .feedbackEndpoint
+                                                    .feedbackToken
+                                }
+                                catch(error){}
+                                videos.push({
+                                    "type": "video",
+                                    "id": id,
+                                    "views": views ? views.split(" ")[0] : "",
+                                    "title": title,
+                                    "removeToken": removeToken
+                                })
+                            }
+                        })}
+                    })
+                    let continuation = ""
+                    if(conts && conts.forEach) {
+                        conts.forEach(c => {
+                            if(c.nextContinuationData
+                            && c.nextContinuationData.continuation) {
+                                continuation = c.nextContinuationData
+                                                .continuation
+                            }
+                        })
+                    }
+                    if(continuation) {
+                        videos.push({
+                            "type": "continuation",
+                            "token": continuation
+                        })
+                    }
+                    callback(videos)
+                }
+                catch(error) {callback(false)}
+            })})
+        })
+    },
+
+    "removeFromHistory": function(req, res) {
+        let device = pullDeviceId(req)
+        if(!userdata[device] || !utils.isAuthorized(req)) {
+            res.sendStatus(401);
+            return;
+        }
+        if(!req.body
+        || !req.body.toString) {
+            res.sendStatus(400)
+            return;
+        }
+        let feedbackTokens = req.body.toString().split(",")
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/feedback?prettyPrint=false", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "feedbackTokens": feedbackTokens
+                })
+            }).then(r => {
+                res.sendStatus(r.status)
+            })
+        })
+    },
+
+    "getWatchHistoryClearToken": function(req, callback) {
+        let device = pullDeviceId(req)
+        if(!userdata[device] || !utils.isAuthorized(req)) {
+            callback(false);
+            return;
+        }
+        setupYouTube(device, (h) => {
+            fetch(hostname + "/youtubei/v1/browse?fields=toolbarMenu", {
+                "method": "POST",
+                "headers": h,
+                "body": JSON.stringify({
+                    "context": androidContext,
+                    "browseId": "FEhistory"
+                })
+            }).then(r => {r.json().then(r => {
+                if(req.query.format == "raw") {
+                    callback(r)
+                    return;
+                }
+                try {
+                    let i = r.toolbarMenu.menuRenderer.items.filter(s => {
+                        return s
+                            && s.menuNavigationItemRenderer
+                            && s.menuNavigationItemRenderer.icon
+                            && s.menuNavigationItemRenderer.icon.iconType
+                               == "DELETE"
+                    })[0]
+                    if(!i) {
+                        callback(false)
+                        return;
+                    }
+                    i = i.menuNavigationItemRenderer.navigationEndpoint
+                         .confirmDialogEndpoint.content.confirmDialogRenderer
+                         .confirmEndpoint.feedbackEndpoint.feedbackToken;
+                    callback(i)
+                }
+                catch(error) {callback(false)}
+            })})
+        })
+    }
+}
+
+function pullFirstGoogleAuth(email, token, callback) {
+    token = "oauth2_4/" + token;
+    let randomDevice = "33a06"
+    while(randomDevice.length !== 16) { 
+        randomDevice += uida[Math.floor(Math.random() * uida.length)]
+    }
+    fetch("https://android.googleapis.com/auth", {
+        "method": "POST",
+        "headers": {
+            "device": randomDevice,
+            "app": "com.google.android.gms",
+            "user-agent": "GoogleAuth/1.4 (generic_x86 OSM1.180201.037); gzip",
+            "content-type": "application/x-www-form-urlencoded",
+            "accept-encoding": "gzip"
+        },
+        "body": [
+            "androidId=" + randomDevice,
+            "lang=en-US",
+            "google_play_services_version=202414022",
+            "sdk_version=27",
+            "device_country=us",
+            "is_dev_key_gmscore=1",
+            "Email=" + encodeURIComponent(email),
+            "build_product=sdk_gphone_x86",
+            "build_brand=google",
+            "Token=" + encodeURIComponent(token),
+            "build_fingerprint=google%2Fsdk_gphone_x86%2Fgeneric_x86%3A8%2FQSR1.210802.001%2F7603624%3Auserdebug%2Fdev-keys",
+            "build_device=generic_x86",
+            "service=ac2dm",
+            "get_accountid=1",
+            "ACCESS_TOKEN=1",
+            "callerPkg=com.google.android.gms",
+            "add_account=1",
+            "callerSig=58e1c4133f7441ec3d2c270270a14802da47ba0e",
+            "droidguard_results=" + genericDg
+        ].join("&")
+    }).then(r => {
+        console.log("access token response status: " + r.status);
+        let status = r.status;
+        r.text().then(r => {
+            if(status !== 200) {
+                console.log(status + " / " + r)
+                callback(false)
+                return;
+            }
+
+            let token = r.split("Token=")[1].split("\n")[0]
+            let auth = r.split("Auth=")[1].split("\n")[0]
+
+            callback({
+                "androidId": randomDevice,
+                "gToken": encryptWithIk(token),
+                "gAuth": encryptWithIk(auth)
+            })
+        })
+    })
+}
+
+function pullYouTubeAuth(userdata, callback) {
+    fetch("https://android.googleapis.com/auth", {
+        "method": "POST",
+        "headers": {
+            "device": userdata.androidId,
+            "app": "com.google.android.youtube",
+            "user-agent": "GoogleAuth/1.4 (generic_x86 OSM1.180201.037); gzip",
+            "content-type": "application/x-www-form-urlencoded",
+            "accept-encoding": "gzip"
+        },
+        "body": [
+            "androidId=" + userdata.androidId,
+            "lang=en-US",
+            "google_play_services_version=202414022",
+            "sdk_version=27",
+            "device_country=us",
+            "is_dev_key_gmscore=1",
+            "Email=" + encodeURIComponent(decryptWthIk(userdata.email)),
+            "token_request_options=CAA4AVAB",
+            "build_product=sdk_gphone_x86",
+            "build_brand=google",
+            "Token=" + encodeURIComponent(decryptWthIk(userdata.gToken)),
+            "build_fingerprint=google%2Fsdk_gphone_x86%2Fgeneric_x86%3A8%2FQSR1.210802.001%2F7603624%3Auserdebug%2Fdev-keys",
+            "build_device=generic_x86",
+            "oauth2_foreground=1",
+            "callerPkg=com.google.android.youtube",
+            "app=com.google.android.youtube",
+            "check_email=1",
+            "system_partition=1",
+            "callerSig=24bb24c05e47e0aefa68a58a766179d9b613a600",
+            "client_sig=24bb24c05e47e0aefa68a58a766179d9b613a600",
+            "service=oauth2%3Ahttps%3A%2F%2Fwww.googleapis.com%2Fauth%2Faccounts.reauth%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.force-ssl%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fidentity.lateimpersonation%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fassistant-sdk-prototype"
+        ].join("&")
+    }).then(r => {
+        let status = r.status;
+        r.text().then(r => {
+            if(status !== 200) {
+                console.log(status + " / " + r)
+                callback(false)
+                return;
+            }
+
+            let auth = r.split("Auth=")[1].split("\n")[0]
+            let expire = r.split("Expiry=")[1].split("\n")[0]
+
+            callback({
+                "yAuth": encryptWithIk(auth),
+                "yExpire": expire
+            })
+        })
+    })
+}
+
+function pullYouTubeAccounts(loginData, callback) {
+    let h = JSON.parse(JSON.stringify(androidHeaders))
+    h.Authorization = `Bearer ${decryptWthIk(loginData.yAuth)}`
+    fetch(hostname + "/youtubei/v1/account/accounts_list", {
+        "method": "POST",
+        "headers": h,
+        "body": JSON.stringify({
+            "context": androidContext,
+            "accountReadMask": {
+                "returnOwner": true,
+                "returnFamilyChildAccounts": true,
+                "returnBrandAccounts": true,
+                "returnPersonaAccounts": true
+            }
+        })
+    }).then(r => {r.json().then(r => {
+        try {
+            //fs.writeFileSync("test.json", JSON.stringify(r))
+            let selectedAccount = ""
+            let selectedType = "handle"
+            r.contents[0].accountSectionListRenderer
+            .contents[0].accountItemSectionRenderer.contents.forEach(a => {
+                if(a.accountItem && a.accountItem.isSelected) {
+                    a = a.accountItem;
+                    if(a.channelHandle && a.channelHandle.runs[0]) {
+                        selectedAccount = a.channelHandle.runs[0].text
+                    } else if(a.accountName && a.accountName.runs[0]) {
+                        selectedAccount = a.accountName.runs[0].text
+                        selectedType = "user"
+                    } else if(a.channelHandle && a.channelHandle.simpleText) {
+                        selectedAccount = a.channelHandle.simpleText
+                    } else if(a.accountName && a.accountName.simpleText) {
+                        selectedAccount = a.accountName.simpleText
+                        selectedType = "user"
+                    }
+                }
+            })
+
+            callback({
+                "yAccount": encryptWithIk(selectedAccount),
+                "yAccountType": encryptWithIk(selectedType)
+            })
+        }
+        catch(error) {
+            console.log("sign-in test failed!", error)
+        }
+    })})
+}
+
+function pullAllYouTubeAccounts(loginData, callback) {
+    let h = JSON.parse(JSON.stringify(androidHeaders))
+    h.Authorization = `Bearer ${decryptWthIk(loginData.yAuth)}`
+    if(loginData.pageId && !loginData.isFirst) {
+        h["x-goog-pageid"] = loginData.pageId
+    }
+    fetch(hostname + "/youtubei/v1/account/accounts_list", {
+        "method": "POST",
+        "headers": h,
+        "body": JSON.stringify({
+            "context": androidContext,
+            "accountReadMask": {
+                "returnOwner": true,
+                "returnFamilyChildAccounts": true,
+                "returnBrandAccounts": true,
+                "returnPersonaAccounts": true
+            }
+        })
+    }).then(r => {r.json().then(r => {
+        let accounts = []
+
+        function pullName(accountItem) {
+            a = accountItem;
+            let handle = false;
+            let name = false;
+            if(a.channelHandle && a.channelHandle.runs) {
+                handle = a.channelHandle.runs[0].text
+            } else if(a.channelHandle && a.channelHandle.simpleText) {
+                handle = a.channelHandle.simpleText
+            }
+            if(a.accountName && a.accountName.runs) {
+                name = a.accountName.runs[0].text
+            } else if(a.accountName && a.accountName.simpleText) {
+                name = a.accountName.simpleText
+            }
+
+            return {
+                "handle": handle,
+                "name": name
+            }
+        }
+
+        try {
+            //fs.writeFileSync("test.json", JSON.stringify(r))
+            let hadAvatars = false;
+            r.contents[0].accountSectionListRenderer
+            .contents[0].accountItemSectionRenderer.contents.forEach(a => {
+                if(a.accountItem) {
+                    a = a.accountItem
+                    let name = pullName(a)
+                    let avatarUrl = false;
+                    try {
+                        avatarUrl = utils.saveAvatar(
+                            a.accountPhoto.thumbnails[0].url
+                        )
+                        hadAvatars = true;
+                    }
+                    catch(error) {console.log(error)}
+                    if(!a.isRedirectToStudio) {
+                        let datasync = null
+                        try {
+                            datasync = a.serviceEndpoint.signInEndpoint
+                                        .directSigninIdentity.datasyncIdToken
+                                        .datasyncIdToken
+                        }
+                        catch(error) {}
+                        if(!a.serviceEndpoint
+                        || !a.serviceEndpoint.signInEndpoint) return;
+                        accounts.push({
+                            "name": name.name,
+                            "handle": name.handle,
+                            "pageId": a.serviceEndpoint.signInEndpoint
+                                       .directSigninIdentity
+                                       .effectiveObfuscatedGaiaId,
+                            "datasyncId": datasync,
+                            "selected": a.isSelected,
+                            "avatar": avatarUrl
+                        })
+                    }
+                }
+            })
+
+            if(hadAvatars) {
+                setTimeout(() => {callback(accounts)}, 300)
+            } else {
+                callback(accounts)
+            }
+        }
+        catch(error) {
+            console.log("account pull failed!", error)
+        }
+    })})
+}
+
+function refreshTube(device, callback) {
+    if(userdata[device]) {
+        let d = userdata[device]
+        if(d.yExpire
+        && Date.now() >= ((parseInt(d.yExpire) * 1000) - (1000 * 120))) { 
+            console.log("does actually refresh")
+            pullYouTubeAuth(d, (data) => {
+                for(let entry in data) {
+                    userdata[device][entry] = data[entry]
+                }
+                fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+                callback()
+            })
+        } else {
+            callback()
+        }
+    } else {
+        callback()
+    }
+}
+
+function setupYouTube(device, callback, req) {
+    if(!userdata[device]) {
+        callback(false);
+    }
+    refreshTube(device, () => {
+        let h = JSON.parse(JSON.stringify(androidHeaders))
+        let loginData = userdata[device]
+        h.Authorization = `Bearer ${decryptWthIk(loginData.yAuth)}`
+        if(loginData.pageId && !loginData.isFirst) {
+            h["x-goog-pageid"] = loginData.pageId
+        }
+        callback(h)
+    })
+}
+
+function pullDeviceId(req) {
+    let deviceId = false;
+    if(req.headers["x-gdata-device"]
+    && req.headers["x-gdata-device"].includes("device-id=\"")) {
+        deviceId = req.headers["x-gdata-device"]
+                    .split("device-id=\"")[1]
+                    .split("\"")[0];
+    } else if(req.headers.cookie
+    && req.headers.cookie.includes("pchelper_user=")) {
+        deviceId = req.headers.cookie.split("pchelper_user=")[1].split(";")[0]
+    }
+    let device = gmcu(deviceId)
+    if(userdata[device] && userdata[device].alias) {
+        return userdata[device].alias
+    }
+    return gmcu(deviceId)
+}
+
+function pullUserIdFromDevice(device, callback) {
+    setupYouTube(device, (h) => {
+        fetch(hostname + "/youtubei/v1/browse?fields=contents&prettyPrint=false", {
+            "method": "POST",
+            "headers": h,
+            "body": JSON.stringify({
+                "context": androidContext,
+                "browseId": "FElibrary"
+            })
+        }).then(r => {r.json().then(r => {
+            //fs.writeFileSync("test.json", JSON.stringify(r))
+            let uid = JSON.stringify(r).split(" ").join("")
+            if(uid.includes(`"browseId":"UC`)) {
+                uid = uid.split(`"browseId":"UC`)[1].split("\"")[0]
+                uid = "UC" + uid
+                callback(uid)
+            } else {
+                uid = JSON.stringify(r)
+                // account with no channel, try to get data
+                let avatar = ""
+                try {
+                    avatar = "https://yt3.ggpht.com/"
+                           + uid.split(`"https://yt3.ggpht.com/`)[1]
+                                .split('"')[0]
+                }
+                catch(error){}
+                let username = uid.split(`{"accountName":{"content":"`)[1]
+                                  .split('"')[0]
+                callback({"type": "b", "avatar": avatar, "username": username})
+            }
+            
+        })})
+    })
+}
+
+const crypto = require("crypto")
+const tranferIkRef = "../www-core-feather.css"
+const i = new Uint8Array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
+let ik = false;
+
+function decryptWthIk(input) {
+    let d = crypto.createDecipheriv("aes-128-cbc", getIk(), i)
+    let c = d.update(input, "hex", "utf8").toString()
+    c += d.final("utf8")
+    return c;
+}
+
+function encryptWithIk(input, whileIkmc) {
+    if(!input) return ""
+    let d;
+    if(whileIkmc) {
+        let ref = tranferIkRef
+        let bt = 1
+        if(fs.existsSync(ref)) {
+            bt = fs.statSync(ref).birthtime.getTime()
+        }
+        let transferIk = bt.toString().padStart(16, "0");
+        d = crypto.createCipheriv("aes-128-cbc", transferIk, i)
+    } else {
+        d = crypto.createCipheriv("aes-128-cbc", getIk(), i)
+    }
+    let c = d.update(input, "utf8", "hex")
+    c += d.final("hex")
+    return c;
+}
+
+// calculate ik
+function getIk() {
+    if(!ik) {
+        let ref = "./backend.js"
+        if(userdata && userdata.ikmc) {
+            ref = tranferIkRef
+        }
+        let bt = 1
+        if(fs.existsSync(ref)) {
+            bt = fs.statSync(ref).birthtime.getTime()
+        }
+        ik = bt.toString().padStart(16, "0");
+    }
+    return ik;
+}
+
+// migrate previous ik prone to breaking signins with updates
+if(userdata && !userdata.ikmc) {
+    //let oldIk = getIk().substring(0,17)
+    for(let u in userdata) {
+        if(userdata[u] && userdata[u].email) {
+            let elem = userdata[u]
+            let email = decryptWthIk(elem.email)
+            let gToken = decryptWthIk(elem.gToken)
+            let gAuth = decryptWthIk(elem.gAuth)
+            let yAuth = decryptWthIk(elem.yAuth)
+            email = encryptWithIk(email, true)
+            gToken = encryptWithIk(gToken, true)
+            gAuth = encryptWithIk(gAuth, true)
+            yAuth = encryptWithIk(yAuth, true)
+
+            userdata[u].email = email;
+            userdata[u].gToken = gToken;
+            userdata[u].gAuth = gAuth;
+            userdata[u].yAuth = yAuth;
+        }
+    }
+
+    userdata.ikmc = 1
+    let ref = tranferIkRef
+    let bt = 1
+    if(fs.existsSync(ref)) {
+        bt = fs.statSync(ref).birthtime.getTime()
+    }
+    ik = bt.toString().padStart(16, "0");
+    fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+}
+
+// make device ids also use ik
+if(userdata && !userdata.ikmc2) {
+    for(let u in userdata) {
+        if(u !== "ikmc" && u !== "ikmc2") {
+            let eu = "u2-" + encryptWithIk(u)
+            let p = JSON.parse(JSON.stringify(userdata[u])) //copy
+            if(p.refDevice) {
+                p.refDevice = false;
+                delete p.refDevice
+            }
+            userdata[u] == null;
+            delete userdata[u]
+            userdata[eu] = p
+        }
+    }
+    userdata.ikmc2 = 1;
+    fs.writeFileSync(userdata_fname, JSON.stringify(userdata))
+}
+
+function gmcu(device) {
+    return "u2-" + encryptWithIk(device)
+}
+
+function parseViewmodelVideo(s, partsStrategy) {
+    let l = s.lockupMetadata.lockupMetadataViewModel
+    let title = l.title.content;
+    let metadataParts = l.metadata.contentMetadataViewModel.metadataRows
+    if(partsStrategy && partsStrategy == "JOIN") {
+        metadataParts = metadataParts.filter(s => {
+            return s
+                && s.metadataParts
+                && s.metadataParts[0]
+                && s.metadataParts[0].text
+        }).map(s => {
+            return s.metadataParts[0].text.content
+        }).join(" · ")
+    } else {
+        metadataParts = metadataParts.filter(s => {
+            return s
+                && s.metadataParts
+                && s.metadataParts[0]
+                && s.metadataParts[0].text
+        })
+        if(!metadataParts[0]) return;
+        metadataParts = metadataParts[0].metadataParts[0].text.content;
+    }
+    if(!metadataParts) return;
+    let id = s.dragAndDropUrl.split("v=")[1].split("&")[0]
+    let relative = ""
+    try {
+        relative = utils.relativeToAbsoluteApprox(
+            metadataParts.split(" · ")[2]
+        )
+    }
+    catch(error) {}
+    let length = utils.time_to_seconds(s.thumbnail.timestampText)
+    let views = utils.approxSubcount(
+        metadataParts.split(" · ")[1].split(" ")[0]
+    )
+    if(isNaN(parseInt(views))) {
+        views = 0
+    }
+    let authorFull = metadataParts.split(" · ")[0]
+    let author = {}
+    try {
+        author = s.avatar.endpoint.innertubeCommand.browseEndpoint
+    }
+    catch(error) {}
+    let authorHandle = ""
+    let authorId = ""
+    if(author
+    && author.canonicalBaseUrl
+    && author.canonicalBaseUrl.includes("/@")) {
+        authorHandle = author.canonicalBaseUrl.split("/@")[1]
+    }
+    try {
+        if(s.avatar.endpoint.innertubeCommand
+            .browseEndpoint.browseId) {
+                authorId = s.avatar.endpoint.innertubeCommand
+                        .browseEndpoint.browseId
+            }
+    }
+    catch(error){}
+    if(!authorId && !partsStrategy) return;
+    return {
+        "id": id,
+        "title": title,
+        "authorId": authorId,
+        "authorHandle": authorHandle,
+        "views": views,
+        "length": length,
+        "upload": relative,
+        "authorFull": authorFull,
+        "type": "viewmodel_parsed"
+    }
+}

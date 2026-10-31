@@ -1,0 +1,8 @@
+windows.zip
+.freebuff/
+node_modules/
+*.log
+.env
+.wrangler/
+*.zip
+config.json
