@@ -1,110 +1,21 @@
-# Noncommercial Copyleft License 1.0
+MIT License
 
-Required Notice: Copyright (c) 2026 gorzkie-graffiti
+Copyright (c) 2026 gorzkie-graffiti
 
-This is a source-available license. It is not an open-source license.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-## 1. Acceptance
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-To receive any license under these terms, you must agree to them as binding
-obligations and as conditions of every license granted to you.
-
-## 2. Copyright License
-
-The licensor grants you a copyright license to do everything with the software
-that would otherwise infringe the licensor's copyright in it, but only for a
-Noncommercial Purpose and only as permitted by this license.
-
-## 3. Noncommercial Purpose
-
-A "Noncommercial Purpose" is any purpose that is not intended for or directed
-toward commercial advantage or monetary compensation. Without limiting that
-definition, the following are commercial and are not Noncommercial Purposes:
-
-(a) selling, renting, leasing, licensing, or otherwise charging anyone for the
-software or a derivative work;
-
-(b) offering the software or a derivative work as a paid service, including
-software-as-a-service, hosted access, hosting, consulting, or support;
-
-(c) bundling the software or a derivative work into a product, service, or
-distribution for which you charge, or that is used to advertise or sell
-something else;
-
-(d) use by a for-profit entity in the operation of its business, including
-internal use to produce goods or services for sale;
-
-(e) use intended to generate revenue, advertising income, subscription income,
-or other commercial benefit.
-
-Use by a charitable organization, educational institution, public research
-organization, public safety or health organization, environmental protection
-organization, or government institution for its public-interest mission is a
-Noncommercial Purpose, regardless of the source of its funding.
-
-## 4. Distribution, Copyleft, and Source Code
-
-You may distribute the software or derivative works only if you:
-
-(a) license the entire work, including all modifications, under this same
-license;
-
-(b) give every recipient the complete corresponding source code of the version
-you distribute, in a form suitable for modification, together with these terms;
-
-(c) keep all copyright, attribution, and license notices intact; and
-
-(d) do not distribute or make available any version in binary-only, obfuscated,
-minified, or otherwise source-withheld form.
-
-If you make the software or a derivative work available to anyone over a
-network, you must also make the complete corresponding source code of that
-version available to those users, free of charge, under this same license.
-
-You may not sublicense, relicense, or dual-license the software or any
-derivative work under other terms, except with the licensor's prior written
-permission.
-
-## 5. Commercial License
-
-No commercial rights are granted under this license. The licensor may grant
-commercial rights only in a separate written agreement. Paying for the software,
-receiving it from a third party, or complying with these terms does not give you
-a commercial license.
-
-## 6. Patent License
-
-The licensor grants you a patent license covering patent claims the licensor can
-license, or becomes able to license, that you would infringe by using the
-software. This patent license ends immediately if you make any written claim
-that the software infringes or contributes to infringement of any patent.
-
-## 7. Termination
-
-Your licenses end automatically if you violate these terms. If you are notified
-in writing of a violation and come into full compliance, including correcting
-past violations, within 32 days of the notice, your licenses are reinstated.
-The licensor may also terminate your licenses for any breach that is not cured.
-
-## 8. No Warranty
-
-As far as the law allows, the software comes as is, without any warranty or
-condition, express or implied, including merchantability, fitness for a
-particular purpose, and non-infringement.
-
-## 9. No Liability
-
-As far as the law allows, the licensor will not be liable to you for any
-damages arising out of these terms or the use or nature of the software, under
-any kind of legal claim.
-
-## 10. Definitions
-
-"The licensor" is the copyright holder offering these terms.
-
-"The software" is the software the licensor makes available under these terms.
-
-"You" is the individual or entity agreeing to these terms.
-
-"Derivative work" means any work based on the software, including modifications,
-adaptations, and works that incorporate the software in whole or in part.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
