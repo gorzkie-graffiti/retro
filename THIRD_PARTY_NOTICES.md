@@ -1,8 +1,10 @@
 # Third-party notices
 
-The original code in this repository is licensed under the MIT License (see
-[`LICENSE`](LICENSE)). The bundled components below are third-party works and
-remain under their own licenses. Their license files are kept alongside them.
+The original code in this repository is licensed under the Noncommercial
+Copyleft License 1.0 (see [`LICENSE`](LICENSE)). The bundled components below
+are third-party works and remain under their own licenses. Their license files
+are kept alongside them. Those licenses are permissive and their rights cannot
+be restricted by this project's license.
 
 | Component | Path | License |
 | --- | --- | --- |

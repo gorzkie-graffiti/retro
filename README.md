@@ -12,14 +12,24 @@ The smaller subfolders each have their own `START.md`, but the retro suit is mea
 
 ## License
 
-The original code in this repository is licensed under the [MIT License](LICENSE).
+This project is **source-available, not open source**. The original code in this
+repository is licensed under the [Noncommercial Copyleft License 1.0](LICENSE).
+
+- **No commercial use.** You may not sell it, bundle it into a paid product, or use
+  it to provide a paid service.
+- **No closed source.** Any modified version you distribute must be released in full
+  under the same license, with complete source code.
 
 Bundled third-party components keep their own licenses — see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The main ones:
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Those licenses are permissive
+(Apache-2.0 / MIT) and their rights cannot be restricted by this project's license:
 
 - `yt2009/` and `windows/yt2009/` — Apache-2.0
 - `spotamp/` Webamp bundle — MIT
 - `ai_apps/gemini-web2api/` — MIT
+
+Commercial rights for the original code are available only under a separate written
+agreement with the maintainer.
 
 ## Disclaimer
 
