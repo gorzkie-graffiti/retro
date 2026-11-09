@@ -8,6 +8,37 @@ const statusText = document.getElementById("statusText");
 const scaleInput = document.getElementById("scale");
 const scaleValue = document.getElementById("scaleValue");
 
+// Firefox 113 has no CSS `zoom`, which the stylesheet uses to render the
+// popup at 1.5x. Fall back to a transform and size the popup window manually
+// because transforms do not contribute to the document's layout size.
+const POPUP_SCALE = 1.5;
+const hasZoom =
+  typeof CSS === "undefined" ||
+  typeof CSS.supports !== "function" ||
+  CSS.supports("zoom", "1.5");
+
+function applyZoomFallback() {
+  if (hasZoom) return;
+  const body = document.body;
+  body.classList.add("spotamp-no-zoom");
+
+  const resize = () => {
+    const width = Math.ceil(body.offsetWidth * POPUP_SCALE);
+    const height = Math.ceil(body.offsetHeight * POPUP_SCALE);
+    document.documentElement.style.width = `${width}px`;
+    document.documentElement.style.height = `${height}px`;
+  };
+
+  resize();
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(resize).observe(body);
+  } else {
+    setTimeout(resize, 60);
+  }
+}
+
+applyZoomFallback();
+
 function render(enabled) {
   checkbox.checked = enabled;
   statusText.textContent = enabled

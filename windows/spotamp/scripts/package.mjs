@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const dist = path.join(root, "dist");
+const isFirefox = process.argv.includes("--firefox");
+const dist = path.join(root, isFirefox ? "dist-firefox" : "dist");
+const distName = path.relative(root, dist);
 const release = path.join(root, "release");
 
 const required = [
@@ -24,18 +26,34 @@ const required = [
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const manifest = JSON.parse(
   await readFile(path.join(dist, "manifest.json"), "utf8").catch(() => {
-    throw new Error("dist/manifest.json is missing. Run `npm run build` first.");
+    throw new Error(
+      `${distName}/manifest.json is missing. Run \`npm run build${
+        isFirefox ? ":firefox" : ""
+      }\` first.`,
+    );
   }),
 );
 
 for (const file of required) {
   await access(path.join(dist, file)).catch(() => {
-    throw new Error(`Missing dist/${file}. Run \`npm run build\` first.`);
+    throw new Error(
+      `Missing ${distName}/${file}. Run \`npm run build${
+        isFirefox ? ":firefox" : ""
+      }\` first.`,
+    );
   });
 }
 
-if (manifest.manifest_version !== 3) {
-  throw new Error("Expected a Manifest V3 build.");
+const expectedVersion = isFirefox ? 2 : 3;
+if (manifest.manifest_version !== expectedVersion) {
+  throw new Error(
+    `Expected a Manifest V${expectedVersion} build in ${distName}/, got V${manifest.manifest_version}.`,
+  );
+}
+if (isFirefox && !manifest.browser_specific_settings?.gecko?.id) {
+  throw new Error(
+    "Firefox manifest is missing browser_specific_settings.gecko.id.",
+  );
 }
 if (manifest.version !== pkg.version) {
   throw new Error(
@@ -46,12 +64,15 @@ if (manifest.version !== pkg.version) {
 const probe = spawnSync("zip", ["-v"], { stdio: "ignore" });
 if (probe.status !== 0) {
   throw new Error(
-    "The `zip` command is required to package Spotamp. Install zip or run the build and archive dist/ manually.",
+    "The `zip` command is required to package Spotamp. Install zip or run the build and archive the output folder manually.",
   );
 }
 
 await mkdir(release, { recursive: true });
-const archive = path.join(release, `spotamp-${pkg.version}.zip`);
+const base = isFirefox
+  ? `spotamp-firefox-${pkg.version}`
+  : `spotamp-${pkg.version}`;
+const archive = path.join(release, `${base}.zip`);
 await rm(archive, { force: true });
 
 const zip = spawnSync("zip", ["-q", "-r", "-X", archive, "."], {
@@ -64,5 +85,5 @@ if (zip.status !== 0) {
 
 const size = (await stat(archive)).size;
 console.log(
-  `Spotamp: packaged release/spotamp-${pkg.version}.zip (${(size / 1024).toFixed(0)} KiB)`,
+  `Spotamp: packaged release/${base}.zip (${(size / 1024).toFixed(0)} KiB)`,
 );

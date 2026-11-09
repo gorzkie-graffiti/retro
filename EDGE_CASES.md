@@ -4,10 +4,10 @@ Honest notes from setting up the retro Windows build and the eXPerience Firefox 
 
 ## Known issues
 
-- **Spotify doesn't work on the bundled browser.** Upgrade to **115.0esr** to use the extension. Anything older and Spotamp won't load.
+- **Spotamp on old Firefox.** Spotamp now ships a separate **Manifest V2** build for Firefox 113+, so it works on the bundled browser without upgrading: run `npm run build:firefox` and load `dist-firefox/` from `about:debugging#/runtime/this-firefox`. The Chrome/Edge build (`dist/`) still needs Chromium 114+. Firefox 113 lacks native CSS `:has()`, so the Firefox build does the marker-attribute workaround automatically.
 - **The skin breaks after updating to the latest version.** Check `about:policies` and see whether updates are disabled. If they aren't, the browser updates itself out of the version the skin was built for.
 - **After uninstalling and reinstalling, the skin is gone.** A plain reinstall doesn't bring the skin back; you have to load the extracted build (below).
-- **The extension doesn't work on Firefox.** The current eXPerience extension is broken in Firefox and still needs to be fixed. Loading the extracted build is the only route that works right now.
+- **The eXPerience skin extension doesn't work on Firefox.** The current eXPerience extension is broken in Firefox and still needs to be fixed. Loading the extracted build is the only route that works right now. (This is about the skin, not Spotamp — Spotamp has its own Firefox build.)
 - **Even the official author's repo ([windows-experience/eXPeriencefox](https://github.com/windows-experience/eXPeriencefox)) doesn't properly work.** Don't change or reinstall Firefox — load the extracted version instead.
 
 ## Extracted build

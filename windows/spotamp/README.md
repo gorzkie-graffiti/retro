@@ -1,12 +1,13 @@
 # Spotamp
 
-Spotamp is a Manifest V3 browser extension that turns the Spotify Web Player
-into a late-1990s Winamp 2–style desktop. Spotify remains the real application:
-its catalog, playlists, albums, artists, search, account and audio playback are
-untouched. Spotamp hides Spotify's visible client chrome entirely and embeds
-[Webamp](https://github.com/captbaritone/webamp) as the only player, wired to
-Spotify's own playback controls. A matching Winamp-style library window is the
-only way to browse routes, folders and playlists.
+Spotamp is a browser extension that turns the Spotify Web Player into a
+late-1990s Winamp 2–style desktop. It ships as Manifest V3 for Chrome/Edge
+(114+) and as Manifest V2 for Firefox 113 and newer. Spotify remains the real
+application: its catalog, playlists, albums, artists, search, account and audio
+playback are untouched. Spotamp hides Spotify's visible client chrome entirely
+and embeds [Webamp](https://github.com/captbaritone/webamp) as the only player,
+wired to Spotify's own playback controls. A matching Winamp-style library
+window is the only way to browse routes, folders and playlists.
 
 **Quick start:** [START.md](START.md) walks through building, loading the
 unpacked extension, and the first-run controls.
@@ -85,8 +86,10 @@ the current web player allows in the user's region/plan).
 
 ## Install
 
-Requirements: Node.js 20+ and a Chromium-based browser (Chrome/Edge 114+).
-For the shortest path, see [START.md](START.md).
+Requirements: Node.js 20+, a Chromium-based browser (Chrome/Edge 114+) or
+Firefox 113 or newer. For the shortest path, see [START.md](START.md).
+
+### Chrome, Edge and Brave
 
 ```bash
 npm ci
@@ -100,11 +103,40 @@ Then:
 3. Choose **Load unpacked** and select the generated `dist/` directory.
 4. Open <https://open.spotify.com/>. Spotamp is enabled by default.
 
+### Firefox 113 and newer
+
+Firefox 113 does not grant Manifest V3 host permissions at install time, so an
+MV3 content script never runs there. `npm run build:firefox` therefore produces
+a separate Manifest V2 build in `dist-firefox/` with the same code:
+
+```bash
+npm run build:firefox
+```
+
+Then:
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Choose **Load Temporary Add-on…**.
+3. Select `dist-firefox/manifest.json`.
+4. Open <https://open.spotify.com/> and refresh once.
+
+The Firefox build declares `browser_specific_settings.gecko.id`
+(`spotamp@gorzkie-graffiti.github.io`) and a minimum version of 113.0, so
+`web-ext run --source-dir dist-firefox` also works for development. For a
+permanent install, sign the `dist-firefox/` folder through
+[addons.mozilla.org](https://addons.mozilla.org/developers/) or load it as an
+unpacked temporary add-on each session.
+
+Firefox 113 lacks native CSS `:has()` (enabled in Firefox 121) and CSS `zoom`,
+so the Firefox build rewrites `:has()` rules to `data-spotamp-has` markers and
+keeps them in sync from the content script; the popup uses a scaled transform
+instead of `zoom`. Browsers with native support are unaffected.
+
 No parameters, hosting, Spotify developer app or API key are needed. The
 extension requests only `storage` (for the on/off and scale settings) and
 access to `https://open.spotify.com/*`. If the interface does not appear after
-installation or an update, refresh the Spotify tab once so Chrome injects the
-new content script.
+installation or an update, refresh the Spotify tab once so the browser injects
+the new content script.
 
 To disable, use the toolbar popup toggle or the `OFF` button in the Spotamp
 status strip. The page returns to Spotify's normal appearance immediately; a
@@ -112,16 +144,19 @@ reload is only needed if Spotify itself is in a bad state.
 
 ### Updating the build
 
-`npm run dev` rebuilds the content script on change (reload the extension and
-the Spotify tab after changes). `npm run build` produces the complete, clean
-`dist/` directory.
+`npm run dev` rebuilds the Chromium content script on change, and
+`npm run dev:firefox` does the same into `dist-firefox/` (reload the extension
+and the Spotify tab after changes). `npm run build` and `npm run build:firefox`
+produce complete, clean output directories.
 
 ### Shipping a release
 
 `npm run package` builds the extension and writes a Chrome Web Store-ready
-archive to `release/spotamp-<version>.zip`. The archive contains the contents of
-`dist/` at its root (not a nested `dist/` folder), including `manifest.json`,
-`content.js`, the popup, icons, and the Webamp licence/notices.
+archive to `release/spotamp-<version>.zip`. `npm run package:firefox` writes
+`release/spotamp-firefox-<version>.zip` from the MV2 build. Both archives
+contain the contents of their output folder at the root (not a nested folder),
+including `manifest.json`, `content.js`, the popup, icons, and the Webamp
+licence/notices.
 
 1. Bump the version in **both** `package.json` and `public/manifest.json`.
    `npm run build` fails with a clear error if they differ.
@@ -176,6 +211,7 @@ src/
 │   ├── app.ts                   lifecycle, enable/disable, shared chrome
 │   ├── settings.ts              chrome.storage sync + in-memory fallback
 │   ├── navigation.ts            SPA route watcher (MutationObserver + history)
+│   ├── compat/hasSelectors.ts   :has() marker polyfill for Firefox < 121
 │   ├── pageDetector.ts          URL/DOM → page kind and label
 │   ├── selectors.ts             central selector/attribute map
 │   ├── tracks.ts                track-row extraction and matching
@@ -195,12 +231,12 @@ src/
 │   └── vendor/webamp/           Webamp 2.3.1 UMD build + MIT licence
 ├── types/vendor.d.ts
 public/
-├── manifest.json                MV3 manifest
+├── manifest.json                MV3 manifest (MV2 generated for Firefox)
 ├── popup.html / .css / .js      retro settings popup
 └── icons/
 tests/                           Vitest + jsdom suite
-scripts/build.mjs                esbuild content bundle + static copy
-scripts/package.mjs              version check + Chrome Web Store zip
+scripts/build.mjs                esbuild bundle + MV2 Firefox manifest
+scripts/package.mjs              version check + store-ready zip (MV3 or MV2)
 START.md                         quick start for loading the extension
 ```
 
@@ -310,6 +346,7 @@ npm run typecheck   # tsc --noEmit
 npm run lint        # eslint .
 npm test            # vitest run
 npm run build       # production extension in dist/
+npm run build:firefox  # Manifest V2 build in dist-firefox/
 ```
 
 The test suite covers page detection, SPA navigation, selector lookup against
@@ -319,7 +356,8 @@ Search, Playlist, Album, Artist, Daily Mix, Liked Songs), the folder tree's
 routes/active folder/cleanup, the library window's saved-playlist and SPA-link
 behaviour, the authentic generic-window chrome, late Spotify-shell mounting,
 UI scale normalization/notifications, double-size toggling/shortcut cleanup,
-and full lifecycle cleanup (65 tests in 10 files).
+and full lifecycle cleanup (65 tests in 9 files, including the `:has()`
+transform and marker runtime).
 
 Additional manual browser verification performed for this build, using the
 captured Home DOM served locally with the built content script and Webamp
@@ -348,6 +386,18 @@ bundle (Spotify's scripts removed):
 - After the duration fix, the console showed no failed audio probes for
   `spotamp:` playlist URLs.
 
+Additional Firefox 113.0.2 verification with `web-ext run` against a mock
+Spotify shell (MV2 build, local page substituted for the Spotify origin):
+
+- The MV2 content script injected without manually granting host permissions;
+  `html.spotamp-active`, the injected stylesheet and `#spotamp-webamp` all
+  appeared within ~250 ms.
+- Firefox reported `CSS.supports("selector(:has(*))") === false`; the polyfill
+  produced 17 `data-spotamp-has` markers, including the active sidebar row and
+  the shortcut card that the original `:has()` rules target.
+- `web-ext lint --source-dir dist-firefox` reports **0 errors** (only the
+  vendored Webamp `Function`/`innerHTML` warnings).
+
 **Not verified:** a signed-in Spotify session was unavailable, so live
 catalog rendering, actual Spotify playback, seek/volume acceptance and
 cross-page styling with real data still need manual testing in a normal
@@ -356,5 +406,6 @@ established results.
 
 ## Licences
 
-Webamp is MIT-licensed; its licence is included in the extension.Spotamp is an independent fan project and is not affiliated with Spotify or Nullsoft/Winamp. Spotamp is a restyle and DOM-level integration; Spotify remains the real application behind catalog, playlists, playback, and account data. See
+Webamp is MIT-licensed; its licence is included in the extension. Spotamp is an
+independent fan project, not affiliated with Spotify or Nullsoft. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

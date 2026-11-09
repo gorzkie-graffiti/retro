@@ -1,6 +1,10 @@
 import contentCss from "./styles/content.css";
 import winampChromeCss from "./styles/winamp-gen.css";
 import { SpotampApp } from "./app";
+import {
+  supportsNativeHas,
+  transformHasSelectors,
+} from "./compat/hasSelectors";
 import { createSettings } from "./settings";
 import { SpotampWebamp } from "./webamp/spotampWebamp";
 import { loadWebamp } from "./webamp/loader";
@@ -23,10 +27,18 @@ async function bootstrap(): Promise<void> {
     await existing.stop();
   }
 
+  const cssText = `${contentCss}\n${winampChromeCss}`;
+  // Firefox < 121 has no native `:has()`; rewrite those selectors to marker
+  // attributes and maintain the markers from the content script.
+  const hasCompat = supportsNativeHas(window)
+    ? null
+    : transformHasSelectors(cssText);
+
   const app = new SpotampApp({
     doc: document,
     win: window,
-    cssText: `${contentCss}\n${winampChromeCss}`,
+    cssText: hasCompat?.cssText ?? cssText,
+    hasRules: hasCompat?.rules,
     settings: createSettings(),
     createWebamp: (hooks, doc, win) => {
       const ctor = loadWebamp();

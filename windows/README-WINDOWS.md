@@ -36,7 +36,7 @@ data from another computer.
 | Gemini Retro | `ai_apps\start.cmd -Use bridge` | Starts the app and its local Gemini bridge. |
 | Gemini Retro (API) | `ai_apps\start.cmd -Use api` | Requires `ai_apps\.env` with `GEMINI_API_KEY=...`. |
 | Retro PKP | `start-retro-pkp.cmd` | Runs the Worker and local site; open http://127.0.0.1:8000. |
-| Spotamp | `build-spotamp.cmd` | Builds `spotamp\dist`; load it unpacked in Chrome/Edge. |
+| Spotamp | `build-spotamp.cmd` | Builds `spotamp\dist` (Chrome/Edge, MV3) and `spotamp\dist-firefox` (Firefox 113+, MV2). |
 | yt2009 | `start-yt2009.cmd` | Starts the yt2009 server (finish its upstream setup first if required). |
 
 Run commands from Command Prompt or PowerShell. Keep the window open while a

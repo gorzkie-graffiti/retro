@@ -6,7 +6,8 @@ a minute. No Spotify developer account, API key, or server is required.
 ## Requirements
 
 - Node.js **20 or newer** (Node 22/24 also works) and npm.
-- Chrome, Edge, Brave, or another Chromium browser **114 or newer**.
+- Chrome, Edge, Brave, or another Chromium browser **114 or newer**, or
+  Firefox **113 or newer**.
 - A normal Spotify account signed in at <https://open.spotify.com/>.
 
 ## 1. Build it
@@ -21,7 +22,20 @@ npm run build
 `npm run build` creates a clean, production-ready `dist/` directory. That
 folder is the extension; the source code stays in `src/` and `public/`.
 
+For Firefox, build the Manifest V2 variant instead:
+
+```bash
+npm run build:firefox
+```
+
+That writes the extension to `dist-firefox/`. Firefox 113 cannot grant
+Manifest V3 host permissions at install time, so the MV3 `dist/` build will not
+inject its content script there; the MV2 build runs without extra permission
+clicks.
+
 ## 2. Load the extension
+
+### Chrome / Edge / Brave
 
 1. Open `chrome://extensions` (or `edge://extensions`).
 2. Turn on **Developer mode**.
@@ -30,6 +44,16 @@ folder is the extension; the source code stays in `src/` and `public/`.
 
 Spotamp appears in the toolbar. Pin it if you want quick access to the
 settings popup.
+
+### Firefox
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on…**.
+3. Select `dist-firefox/manifest.json`.
+
+Temporary add-ons disappear when Firefox closes; load the folder again after a
+restart, or sign the package for a permanent install. Spotamp appears in the
+toolbar.
 
 ## 3. Open Spotify
 
@@ -45,9 +69,9 @@ by:
 - The **status strip** — shuffle mode, connection state, scale, library, player,
   help, and the kill switch.
 
-If the interface does not appear, refresh the Spotify tab once. Chrome only
-injects the content script into pages loaded after the extension was installed
-or updated.
+If the interface does not appear, refresh the Spotify tab once. The browser
+only injects the content script into pages loaded after the extension was
+installed or updated.
 
 ## 4. Use it
 
@@ -65,40 +89,43 @@ or updated.
 Click **OFF** in the status strip, or turn off **ENABLE SPOTAMP** in the popup.
 Spotify's normal interface returns immediately; refresh only if Spotify itself
 is in a bad state. To remove it completely, use **Remove** on the extension's
-card in `chrome://extensions`.
+card in `chrome://extensions`, or remove the temporary add-on in
+`about:debugging#/runtime/this-firefox`.
 
 ## Development
 
 ```bash
-npm run dev        # rebuild the content script on change
-npm run typecheck  # TypeScript
-npm run lint       # ESLint
-npm test           # Vitest + jsdom, 65 tests
-npm run build      # production build in dist/
+npm run dev           # rebuild the Chromium content script on change
+npm run dev:firefox   # rebuild dist-firefox/content.js on change
+npm run typecheck     # TypeScript
+npm run lint          # ESLint
+npm test              # Vitest + jsdom, 65 tests
+npm run build         # production build in dist/
+npm run build:firefox # production MV2 build in dist-firefox/
 ```
 
-While developing, reload the extension in `chrome://extensions` and refresh the
-Spotify tab after each background/content-script change. `npm run dev` rebuilds
-`dist/content.js`; the Spotify tab still needs a refresh.
+While developing, reload the extension in `chrome://extensions` (or
+`about:debugging#/runtime/this-firefox`) and refresh the Spotify tab after each
+content-script change. The Spotify tab still needs a refresh.
 
 ## Shipping a release
 
 ```bash
-npm run package
+npm run package          # Chrome/Edge, MV3
+npm run package:firefox  # Firefox, MV2
 ```
 
-This runs the production build and writes
-`release/spotamp-<version>.zip` with `manifest.json` at the archive root, ready
-for Chrome Web Store upload or manual distribution. Bump the version in both
-`package.json` and `public/manifest.json` first; the build refuses to run if
-they disagree. See [README.md](README.md#shipping-a-release) for the full
-checklist.
+Each runs the matching production build and writes
+`release/spotamp-<version>.zip` or `release/spotamp-firefox-<version>.zip` with
+`manifest.json` at the archive root. Bump the version in both `package.json`
+and `public/manifest.json` first; the build refuses to run if they disagree.
+See [README.md](README.md#shipping-a-release) for the full checklist.
 
 ## Troubleshooting
 
 | Problem | Fix |
 | --- | --- |
-| Spotify looks normal | Reload the extension in `chrome://extensions`, then refresh the Spotify tab. Make sure Spotamp is enabled in the popup. |
+| Spotify looks normal | Reload the extension in `chrome://extensions` (or `about:debugging#/runtime/this-firefox` on Firefox), then refresh the Spotify tab. Make sure Spotamp is enabled in the popup. |
 | No player or transport controls | Spotify's player bar must exist. Open a track, press play in Spotify itself once, then use the Webamp controls. |
 | Playlist is empty | Spotify has not finished loading the page. Wait for the page, then click a folder in the library. |
 | Library or windows are off-screen | Set the scale to 100% in the popup, then use `2X` again. Drag windows back by their title bars. |

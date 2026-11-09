@@ -28,6 +28,17 @@ body {
   zoom: 1.5;
 }
 
+/* Firefox 113 does not support `zoom`; popup.js swaps in a transform and
+   sizes the document so the popup window matches the scaled content. */
+body.spotamp-no-zoom {
+  zoom: normal;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: scale(1.5);
+  transform-origin: 0 0;
+}
+
 .window {
   border: 1px solid #000;
   background: var(--panel);

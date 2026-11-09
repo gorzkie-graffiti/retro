@@ -1,6 +1,10 @@
 import { applyPageAdapter } from "./adapters";
 import { applyPlayerDom, clearPlayerDom } from "./adapters/player";
 import { applySidebar, clearSidebar } from "./adapters/sidebar";
+import {
+  HasSelectorRuntime,
+  type HasRule,
+} from "./compat/hasSelectors";
 import { NavigationWatcher } from "./navigation";
 import { detectRoute } from "./pageDetector";
 import {
@@ -41,6 +45,8 @@ export interface SpotampAppOptions {
   doc?: Document;
   win?: Window;
   cssText: string;
+  /** Marker rules emitted by the `:has()` compatibility transform. */
+  hasRules?: HasRule[];
   settings: SettingsBackend;
   createWebamp: (
     hooks: WebampAdapterHooks,
@@ -63,6 +69,7 @@ export class SpotampApp {
   readonly doc: Document;
   private readonly win: Window;
   private readonly cssText: string;
+  private readonly hasRules: HasRule[];
   private readonly settings: SettingsBackend;
   private readonly createWebamp: SpotampAppOptions["createWebamp"];
   private readonly logger: Pick<Console, "info" | "warn" | "error">;
@@ -83,12 +90,14 @@ export class SpotampApp {
   private starting = false;
   private scale = DEFAULT_SCALE;
   private styleEl: HTMLStyleElement | null = null;
+  private hasRuntime: HasSelectorRuntime | null = null;
   private lastTrackSignature = "";
 
   constructor(options: SpotampAppOptions) {
     this.doc = options.doc ?? document;
     this.win = options.win ?? window;
     this.cssText = options.cssText;
+    this.hasRules = options.hasRules ?? [];
     this.settings = options.settings;
     this.createWebamp = options.createWebamp;
     this.logger = options.logger ?? console;
@@ -151,6 +160,7 @@ export class SpotampApp {
 
     this.injectTheme();
     this.doc.documentElement.classList.add("spotamp-active");
+    this.startHasRuntime();
 
     const adapter = new SpotifyPlaybackAdapter({
       doc: this.doc,
@@ -215,6 +225,7 @@ export class SpotampApp {
         if (!this.active) {
           webamp.destroy();
           this.webamp = null;
+          this.stopHasRuntime();
           return;
         }
       }
@@ -274,6 +285,7 @@ export class SpotampApp {
     clearPlayerDom(this.doc);
     clearSidebar(this.doc);
     this.clearPageClasses();
+    this.stopHasRuntime();
     this.lastTrackSignature = "";
   }
 
@@ -426,6 +438,17 @@ export class SpotampApp {
     this.doc.documentElement.style.removeProperty("--spotamp-bar-h");
     this.styleEl?.remove();
     this.styleEl = null;
+  }
+
+  private startHasRuntime(): void {
+    if (this.hasRules.length === 0 || this.hasRuntime) return;
+    this.hasRuntime = new HasSelectorRuntime(this.doc, this.win, this.hasRules);
+    this.hasRuntime.start();
+  }
+
+  private stopHasRuntime(): void {
+    this.hasRuntime?.stop();
+    this.hasRuntime = null;
   }
 
   private clearPageClasses(): void {

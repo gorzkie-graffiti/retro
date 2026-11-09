@@ -16,7 +16,7 @@ If you just want the whole thing in one look, here is the shortest path once the
 | Install deps    | `windows\setup.cmd`                                                                                                           | Project dependencies installed            |
 | Gemini Retro    | `windows\ai_apps\start.cmd`                                                                                                   | Gemini app + optional bridge              |
 | Retro PKP       | `windows\start-retro-pkp.cmd`                                                                                                 | Local PKP timetable app                   |
-| Spotamp         | `windows\build-spotamp.cmd`, then load `windows\spotamp\dist` unpacked                                                        | Winamp-style Spotify extension            |
+| Spotamp         | `windows\build-spotamp.cmd`, then load `windows\spotamp\dist` unpacked (Chrome/Edge) or `windows\spotamp\dist-firefox` in Firefox 113+          | Winamp-style Spotify extension            |
 | yt2009          | `windows\start-yt2009.cmd`                                                                                                    | Retro YouTube server                      |
 | Reddit          | Tampermonkey: paste `windows\redirect-old-reddit.js`                                                                          | Modern Reddit redirects to old.reddit.com |
 
@@ -24,7 +24,7 @@ Keep any running window open; press `Ctrl+C` to stop a server.
 
 Details are below, and the Windows-side launch notes are in [`windows/README-WINDOWS.md`](windows/README-WINDOWS.md).
 
-If the eXPerience skin or Spotamp misbehaves, see [`EDGE_CASES.md`](EDGE_CASES.md) for the known issues and the pre-extracted Firefox 115.0esr build.
+If the eXPerience skin or Spotamp misbehaves, see [`EDGE_CASES.md`](EDGE_CASES.md) for the known issues and the pre-extracted Firefox build.
 
 ## What you need
 
@@ -81,7 +81,7 @@ In short:
 
 - **Gemini Retro** — `ai_apps\start.cmd`
 - **Retro PKP** — `start-retro-pkp.cmd`
-- **Spotamp** — `build-spotamp.cmd`, then load `spotamp\dist` as an unpacked extension
+- **Spotamp** — `build-spotamp.cmd`, then load `spotamp\dist` unpacked in Chrome/Edge or `spotamp\dist-firefox` in Firefox 113+
 - **yt2009** — `start-yt2009.cmd` (finish its upstream setup first if required)
 
 Keep the window open while a server is running; press `Ctrl+C` to stop it.
@@ -137,6 +137,18 @@ Then:
 2. Turn on **Developer mode**.
 3. Choose **Load unpacked** and select `spotamp\dist`.
 4. Open <https://open.spotify.com/>.
+
+For Firefox 113 and newer, the same script also builds a Manifest V2 copy in
+`spotamp\dist-firefox`:
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Choose **Load Temporary Add-on…** and select
+   `spotamp\dist-firefox\manifest.json`.
+3. Open <https://open.spotify.com/> and refresh once.
+
+Firefox 113 cannot grant Manifest V3 host permissions at install time, which is
+why it needs the MV2 folder instead of `dist`. The Firefox build adds the
+`:has()` marker polyfill and popup zoom fallback automatically.
 
 Full start notes are in [`windows/spotamp/START.md`](windows/spotamp/START.md).
 
